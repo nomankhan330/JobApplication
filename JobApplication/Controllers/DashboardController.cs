@@ -41,6 +41,7 @@ namespace JobApplication.Controllers
                 // helper to call GetJobs and extract total count
                 async Task<int> CountAsync(string shipmentType = null)
                 {
+                    ArgumentNullException.ThrowIfNull(shipmentType);
                     var filters = new List<BusinessLogic.Models.QueryFilters>
                     {
                         new BusinessLogic.Models.QueryFilters { fieldName = "draw", filterValue = "1" },
