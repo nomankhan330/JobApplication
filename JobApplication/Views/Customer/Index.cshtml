@@ -1,0 +1,947 @@
+﻿@inject BusinessLogic.Interfaces.ISessionHelper SessionHelper
+@{
+    ViewData["Title"] = "Customers / Service Provider";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Head {
+    <!-- DataTables -->
+    <link href="~/assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/libs/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        .dataTables_paginate {
+            text-align: right !important;
+        }
+
+        .pagination-rounded .page-link {
+            border-radius: 50px !important;
+        }
+
+        .dataTables_paginate .pagination {
+            justify-content: flex-end !important;
+        }
+    </style>
+}
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- Page Title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Customers / Service Provider</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+
+                        <!-- Filter Button -->
+                        <div class="mb-3">
+                            <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection">
+                                <i class="fa fa-filter"></i> Filters
+                            </button>
+                        </div>
+
+                        <!-- Filter Section -->
+                        <div class="collapse" id="filterSection">
+                            <div class="card mb-3 p-3">
+
+                                <div class="row mb-3">
+
+                                    <div class="col-md-3">
+                                        <input id="filterCustomerName" class="form-control" placeholder="Customer /Service Provider">
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <input id="filterEmail" class="form-control" placeholder="Email">
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <input id="filterVatId" class="form-control" placeholder="VAT ID">
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <select id="filterStatus" class="form-control">
+                                            <option value="">All Status</option>
+                                            <option value="true">Active</option>
+                                            <option value="false">Inactive</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button id="btnSearch" class="btn btn-primary me-2"><i class="fas fa-search"></i> Search</button>
+                                        <button id="btnClear" class="btn btn-secondary"><i class="fas fa-window-close me-1"></i> Clear</button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Add Button -->
+
+                        @if(SessionHelper.LoginType != 1)
+                        {
+                            <div class="text-end mb-3">
+                                <button class="btn btn-success" id="btnAdd">
+                                    <i class="fa fa-plus"></i> Add Customer / Service Provider
+                                </button>
+                            </div>
+                        }
+
+                        
+
+                        <!-- Datatable -->
+                        <table id="datatable" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Id</th>
+                                    <th>Code</th>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>VAT ID</th>
+                                    <th>Country</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                        </table>
+
+                        <div id="tableLoader" style="text-align:center;padding:40px;display:none;">
+                            <div class="spinner-border text-primary"></div>
+                            <div class="mt-2">Loading...</div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="customerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Add / Edit Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="customerForm">
+
+                    <input type="hidden" id="Id" name="Id">
+                    <input type="hidden" id="Language" name="Language" value="en">
+
+                    <div class="row">
+
+                        <!-- Customer Code -->
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Code<span class="required-label">*</span></label>
+                            <input type="text" class="form-control" id="CustomerCode" name="CustomerCode" disabled placeholder="Auto Generated">
+                        </div>
+
+                         <!-- Type -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Type<span class="required-label">*</span></label>
+                            <div class="input-group">
+                                <select class="form-control select-my" id="TypeId" name="TypeId" required>
+                                    <option value="">Select Type</option>
+                                    <option value="1">Customer</option>
+                                    <option value="2">Service Provider</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Language -->
+                        @* <div class="col-md-4 mb-3">
+                            <label class="form-label">Language<span class="required-label">*</span></label>
+                            <div class="input-group">
+                                <select class="form-control select-my" id="Language" name="Language" required>
+                                    <option value="">Select Language</option>
+                                    <option value="en">English</option>
+                                    <option value="ar">Arabic</option>
+                                </select>
+                            </div>
+                        </div> *@
+
+                        <!-- Company -->
+                        <div class="col-md-5 mb-3">
+                            <label class="form-label">Company<span class="required-label">*</span></label>
+                            <div class="input-group">
+                                <select class="form-control select-my" id="CompanyId" name="CompanyId" required>
+                                    <option value="">Select Company</option>
+                                </select>
+
+                                @if(SessionHelper.LoginType != 1)
+                                {
+                                    <button type="button" id="btnOpenCompanyModal"
+                                            class="btn btn-primary">
+                                        Create +
+                                    </button>                                    
+                                }
+
+                                
+                            </div>
+                        </div>
+
+                        <!-- Customer Name -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Full Name<span class="required-label">*</span></label>
+                            <input type="text" class="form-control" id="CustomerName" name="CustomerName" required>
+                        </div>
+
+                        
+                        <div class="col-md-6 mb-3 arabic-field">
+                            <label class="form-label">Full Name (Arabic)</label>
+                            <input type="text" class="form-control" id="CustomerNameAr" name="CustomerNameAr" dir="rtl">
+                        </div>
+
+                        <!-- Mailing Name -->
+                        <div class="col-md-6 mb-3 english-field">
+                            <label class="form-label">Mailing Name<span class="required-label">*</span></label>
+                            <input type="text" class="form-control" id="MailingName" name="MailingName" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3 arabic-field">
+                            <label class="form-label">Mailing Name (Arabic)</label>
+                            <input type="text" class="form-control" id="MailingNameAr" name="MailingNameAr" dir="rtl">
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email<span class="required-label">*</span></label>
+                            <input type="email" class="form-control" id="Email" name="Email" required>
+                        </div>
+
+                        <!-- Contact No -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Contact No.<span class="required-label">*</span></label>
+                            <input type="text" class="form-control" id="ContactNo" name="ContactNo" required>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="col-md-6 mb-3 english-field">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control textarea-my" id="Address" name="Address" rows="4"></textarea>
+                        </div>
+
+                        <div class="col-md-6 mb-3 arabic-field">
+                            <label class="form-label">Address (Arabic)</label>
+                            <textarea class="form-control textarea-my" id="AddressAr" name="AddressAr" rows="4" dir="rtl"></textarea>
+                        </div>
+
+                        <!-- VAT ID -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">VAT ID<span class="required-label">*</span></label>
+                            <input type="text" class="form-control" id="VatId" name="VatId" required>
+                        </div>
+
+                        <!-- VAT Deduction -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">VAT Deduction<span class="required-label">*</span></label>
+                            <select class="form-control select-my" id="VatDeduction" name="VatDeduction" required>
+                                <option value="">Select</option>
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        
+                        <!-- VAT Rate -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">VAT Rate<span class="required-label">*</span></label>
+                            <input type="number" class="form-control" id="VatRate" name="VatRate" min="1" required>
+                        </div>
+
+                        <!-- Region -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Region</label>
+                            <select class="form-control select-my" id="RegionId" name="RegionId">
+                                <option value="">Select Region</option>
+                            </select>
+                        </div>
+
+                        <!-- Country -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Country</label>
+                            <select class="form-control select-my" id="CountryId" name="CountryId">
+                                <option value="">Select Country</option>
+                            </select>
+                        </div>
+
+                        <!-- PO Box -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">PO Box</label>
+                            <input type="text" class="form-control" id="POBox" name="POBox">
+                        </div>
+
+                        <!-- Local Language Mailing -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Mailing Local Language</label>
+                            <select class="form-control select-my" id="LocalLanguageMailing" name="LocalLanguageMailing">
+                                <option value="">Select Mailing Local Language</option>
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-control select-my" id="IsActive" name="IsActive">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <hr>
+
+                    <h5>Bank Details</h5>
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Bank Name</label>
+                            <input type="text" class="form-control" id="BankName" name="BankName">
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Account Number</label>
+                            <input type="text" class="form-control" id="AccountNumber" name="AccountNumber">
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">IBAN</label>
+                            <input type="text" class="form-control" id="IBAN" name="IBAN">
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">SWIFT Code</label>
+                            <input type="text" class="form-control" id="SwiftCode" name="SwiftCode">
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+                @if(SessionHelper.LoginType != 1)
+                {
+                    <button type="button" id="btnSubmit" class="btn btn-primary">Submit</button>    
+                }
+                
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Company Modal -->
+<div class="modal fade" id="companyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Create Company</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="companyForm">
+
+                    <input type="hidden" id="CompanyId" name="CompanyId" />
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Company Name <span class="required-label">*</span>
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               id="CompanyName"
+                               name="CompanyName"
+                               placeholder="Enter Company Name"
+                               required>
+
+                    </div>
+
+
+                    <div class="mb-3 arabic-field">
+                        <label class="form-label">
+                            Company Name (Arabic)
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               id="CompanyNameAr"
+                               name="CompanyNameAr"
+                               @* placeholder="أدخل اسم الشركة" *@
+                               dir="rtl">
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+
+                <button type="button"
+                        id="btnSaveCompany"
+                        class="btn btn-primary">
+                    Save Company
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@section Script {
+
+    <!-- Required datatable js -->
+    <script src="~/assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="~/assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            loadCountry();
+            loadRegion();
+            loadCompany();
+            loadRecords();
+
+            //$(".arabic-field").hide();
+
+        // Typing restriction
+        $(document).on("keypress", ".arabic-field input, .arabic-field textarea", function (e) {
+
+            let char = String.fromCharCode(e.which);
+            let arabicRegex = /^[\u0600-\u06FF\s]+$/;
+
+            if (!arabicRegex.test(char)) {
+                e.preventDefault();
+            }
+        });
+
+        // Paste / drag-drop / autofill restriction
+        // $(document).on("input", ".arabic-field input, .arabic-field textarea", function () {
+        //     $(this).val(
+        //         $(this).val().replace(/[^\u0600-\u06FF\s]/g, '')
+        //     );
+        // });
+
+        // $(document).on("paste", ".arabic-field input, .arabic-field textarea", function (e) {
+        //     e.preventDefault();
+        // });
+
+            // $("#Language").change(function () {
+
+            //     let lang = $(this).val();
+
+            //     LanguageChange(lang);
+
+            // });
+
+            // function LanguageChange(lang) {
+            //     if (lang === "ar") {
+            //         $(".english-field").hide();
+            //         $(".arabic-field").show();
+
+            //         // English required remove
+            //         $(".english-field input, .english-field select, .english-field textarea")
+            //             .prop("required", false);
+            //     }
+            //     else {
+            //         $(".english-field").show();
+            //         $(".arabic-field").hide();
+
+            //         // English required add back
+            //         $(".english-field input, .english-field select, .english-field textarea")
+            //             .prop("required", true);
+            //     }
+            // }
+
+            $("#btnOpenCompanyModal").click(function () {
+
+                $("#companyModal").modal({
+                    backdrop: 'static',
+                    keyboard: false
+                });
+
+                $("#companyModal").modal("show");
+            });
+            
+
+            $('#btnSaveCompany').on('click', function () {
+
+                let companyName = $('#CompanyName').val().trim();
+                let companyNameAr = $('#CompanyNameAr').val().trim();
+
+                if (companyName !== '') {
+
+                    $.ajax({
+                        url: '/Customer/SaveCompany',
+                        type: 'POST',
+                        data: { companyName: companyName, companyNameAr: companyNameAr },
+                        success: function (response) {
+
+                            let $dropdown = $('#CompanyId');
+
+                            console.log("company response", response);
+
+                            // Agar Arabic name hai to bracket mein show karo
+                            let displayText = response.name;
+
+                            if (response.nameAr && response.nameAr.trim() !== '') {
+                                displayText += ` (${response.nameAr})`;
+                            }
+
+                            // check existing option
+                            let exists = $dropdown.find(`option[value='${response.id}']`).length > 0;
+
+                            if (!exists) {
+                                $dropdown.append(
+                                    $('<option>', {
+                                        value: response.id,
+                                        text: displayText
+                                    })
+                                );
+                            }
+
+                            // always select returned value
+                            $dropdown.val(response.id);
+
+                            // reset + close modal
+                            $('#CompanyName').val('');
+                            $('#CompanyNameAr').val('');
+                            $('#companyModal').modal('hide');
+                        }
+                    });
+
+                } else {
+                    alert('Please enter company name.');
+                }
+            });
+
+            var myModal = new bootstrap.Modal(document.getElementById('customerModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            $('#btnAdd').on('click', function () {
+                $("#customerForm")[0].reset();
+                $("#customerForm [required]").removeClass("is-invalid");
+                $("#Id").val("");
+                //$("#CostCenterPhotoPreview").attr("src", "").hide();
+                myModal.show();
+            });
+
+            $("#btnSubmit").on("click", function () {
+               
+                if (!validateForm()) return;
+
+                var formData = new FormData($("#customerForm")[0]);
+                var $btn = $(this);
+
+                // for (let [key, value] of formData.entries()) {
+                //     console.log(key, value);
+                // }
+                // return;
+
+                $.ajax({
+                    url: "/Customer/Save",
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    beforeSend: function () {
+                        $btn.prop("disabled", true).text("Processing...");
+                    },
+                    success: function (data) {
+                        console.log("data", data);
+
+                        if (data.errorCode == 200) {
+                            showMessage("Data saved successfully!", "success");
+                            myModal.hide();
+                            loadRecords();
+                        } else {
+                            showMessage(data.data, "error");
+                        }
+                    },
+                    complete: function () {
+                        $btn.prop("disabled", false).text("Submit");
+                    }
+                });
+
+            });
+
+            $(document).on("click", ".btn-edit", function () {
+
+                let id = $(this).data("id");
+
+                // 🔹 Reset form
+                $("#customerForm")[0].reset();
+                $("#customerForm [required]").removeClass("is-invalid");
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Customer/GetCustomerById",
+                    data: { id: id },
+                    async: false,
+
+                    success: function (resp) {
+
+                        console.log("edit resp", resp);
+
+                        if (!resp || !resp.Customer) {
+                            showMessage && showMessage("Record not found", "error");
+                            return;
+                        }
+
+                        let data = resp.Customer;
+
+                        // 🔹 Basic fields
+                        $("#Id").val(data.Id);
+                        $("#CustomerCode").val(data.CustomerCode);
+                        $("#TypeId").val(data.TypeId);
+                        $("#CustomerName").val(data.CustomerName);
+                        $("#CustomerNameAr").val(data.CustomerNameAr);
+                        $("#MailingName").val(data.MailingName);
+                        $("#MailingNameAr").val(data.MailingNameAr);
+
+                        $("#Email").val(data.Email);
+                        $("#ContactNo").val(data.ContactNo);
+
+                        $("#Address").val(data.Address);
+                        $("#AddressAr").val(data.AddressAr);
+
+                        $("#VatId").val(data.VatId);
+                        $("#VatDeduction").val(data.VatDeduction.toString());
+                        $("#VatRate").val(data.VatRate);
+
+                        // 🔹 Dropdowns
+                        $("#CompanyId").val(data.CompanyId);
+                        $("#CountryId").val(data.CountryId);
+                        $("#RegionId").val(data.RegionId);
+
+                        $("#POBox").val(data.Pobox);
+                        
+                        //$("#LocalLanguageMailing").val(data.LocalLanguageMailing.toString());
+
+                        $("#LocalLanguageMailing").val(data?.LocalLanguageMailing ? data.LocalLanguageMailing.toString() : '');
+
+                        // 🔹 Bank Info
+                        $("#BankName").val(data.BankName);
+                        $("#AccountNumber").val(data.AccountNumber);
+                        $("#IBAN").val(data.Iban);
+                        $("#SwiftCode").val(data.SwiftCode);
+
+                        // 🔹 Status
+                        $("#IsActive").val(String(data.IsActive).toLowerCase());
+
+                        // 🔹 Optional: Language
+                        //LanguageChange(data.Language.toString());
+                        //$("#Language").val(data.Language);
+
+                        // 🔹 Show modal
+                        myModal.show();
+                    }
+                });
+
+            });
+
+            $(document).on("click", ".btn-toggle", function () {
+
+                let id = $(this).data("id");
+                
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You want to change status",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, update it!"
+                }).then((result) => {
+
+                    if (!result.isConfirmed) return;
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/Customer/ToggleCustomerStatus",
+                        data: { id: id },
+                        success: function (res) {
+
+                            if (!res || res.errorCode !== 200) {
+                                Swal.fire("Error", res.errorMessage || "Something went wrong", "error");
+                                return;
+                            }
+
+                            Swal.fire("Success", "Status updated successfully", "success");
+
+                            $('#datatable').DataTable().ajax.reload(null, false);
+                        }
+                        
+                    });
+
+                });
+
+            });
+
+            // Search & Clear
+            $("#btnSearch").click(function () {
+                loadRecords();
+            });
+
+            $("#btnClear").click(function () {
+                $("#filterSection").find("input").val("");
+                $("#filterSection").find("select").val("");
+                loadRecords();
+            });
+
+            function loadCountry(selectedId = null) {
+                $.ajax({
+                    url: '/Dropdown/GetCountry',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (response) {
+
+                        let $dropdown = $('#CountryId');
+                        $dropdown.empty();
+                        $dropdown.append('<option value="" disabled selected>Select Country</option>');
+
+                        $.each(response.data, function (i, item) {
+                            $dropdown.append(`<option value="${item.Id}">${item.Name}</option>`);
+                        });
+
+                        // Set selected if ID provided
+                        if (selectedId !== null && selectedId !== "" && selectedId !== undefined) {
+                            $dropdown.val(selectedId);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error loading country:", error);
+                    }
+                });
+            }
+
+            function loadRegion(selectedId = null) {
+                $.ajax({
+                    url: '/Dropdown/GetRegion',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (response) {
+
+                        let $dropdown = $('#RegionId');
+                        $dropdown.empty();
+                        $dropdown.append('<option value="" disabled selected>Select Region</option>');
+
+                        $.each(response.data, function (i, item) {
+                            $dropdown.append(`<option value="${item.Id}">${item.Name}</option>`);
+                        });
+
+                        // Set selected if ID provided
+                        if (selectedId !== null && selectedId !== "" && selectedId !== undefined) {
+                            $dropdown.val(selectedId);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error loading region:", error);
+                    }
+                });
+            }
+
+            function loadCompany(selectedId = null) {
+                $.ajax({
+                    url: '/Dropdown/GetCompany',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (response) {
+
+                        let $dropdown = $('#CompanyId');
+                        $dropdown.empty();
+                        $dropdown.append('<option value="" disabled selected>Select Company</option>');
+
+                        $.each(response.data, function (i, item) {
+
+                            let displayText = item.Name;
+
+                            if (item.NameAr && item.NameAr.trim() !== '') {
+                                displayText += ` (${item.NameAr})`;
+                            }
+
+                            $dropdown.append(
+                                `<option value="${item.Id}">${displayText}</option>`
+                            );
+                        });
+
+                        // Set selected if ID provided
+                        if (selectedId !== null && selectedId !== "" && selectedId !== undefined) {
+                            $dropdown.val(selectedId);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error loading company:", error);
+                    }
+                });
+            }
+
+            function loadRecords() {
+               
+                //$("#tableLoader").show();
+
+                if ($.fn.DataTable.isDataTable('#datatable')) {
+                    $('#datatable').DataTable().destroy();
+                }
+
+                $("#datatable").DataTable({
+                    processing: true,
+                    serverSide: true,
+                    searching: true,
+                    paging: true,
+                    lengthChange: true,
+                    pageLength: 10,
+                    deferRender: true,
+                    order: [[0, "desc"]],
+                    ajax: {
+                        url: "/Customer/GetCustomers",
+                        type: "POST",
+                        data: function (d) {
+                            d.customerName = $("#filterCustomerName").val();
+                            d.email = $("#filterEmail").val();
+                            d.vatId = $("#filterVatId").val();
+                            d.status = $("#filterStatus").val();
+                        }
+                    },
+
+                    columns: [
+                        { data: "Id" },
+                        { data: "CustomerCode" },
+                        {
+                            data: "Type",
+                            render: function (data) {
+
+                                if (data === "Customer") {
+                                    return `
+                                        <span class="badge rounded-pill bg-primary px-3 py-2">
+                                            <i class="fas fa-user me-1"></i> Customer
+                                        </span>`;
+                                }
+
+                                if (data === "Service Provider") {
+                                    return `
+                                        <span class="badge rounded-pill bg-success px-3 py-2">
+                                            <i class="fas fa-tools me-1"></i> Service Provider
+                                        </span>`;
+                                }
+
+                                return `
+                                    <span class="badge rounded-pill bg-secondary px-3 py-2">
+                                        ${data}
+                                    </span>`;
+                            }
+                        },
+                        { data: "CustomerName" },
+                        { data: "Email" },
+                        { data: "VatId" },
+                        { data: "CountryName" },
+                        {
+                            data: "IsActive",
+                            render: function (data) {
+                                return `<span class="status-badge ${data ? 'status-active' : 'status-inactive'}">
+                                            <span class="status-dot"></span>
+                                            ${data ? 'Active' : 'Inactive'}
+                                        </span>`;
+                            }
+                        },
+                        {
+                            data: null,
+                            orderable: false,
+                            searchable: false,
+                            className: "text-center align-middle",
+                            render: function (data) {
+                                return `
+                                    <div class="action-btn-group">
+
+                                        <button class="action-btn btn-view" style="display:none;"
+                                                data-id="${data.Id}"
+                                                title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+
+                                        <button class="action-btn btn-edit"
+                                                data-id="${data.Id}"
+                                                title="Edit">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+
+                                        <button class="action-btn btn-delete" style="display:none;"
+                                                data-id="${data.Id}"
+                                                title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+
+                                        <button class="action-btn btn-toggle"
+                                            data-id="${data.Id}"
+                                            title="Archive">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+
+                                    </div>
+                                `;
+                            }
+                        }
+                    ],
+                    drawCallback: function () {
+                        $("#tableLoader").hide();
+                    }
+                });
+            }
+
+            function validateForm() {
+                let valid = true;
+
+                $("#customerForm [required]").each(function () {
+                    if (!$(this).val()) {
+                        $(this).addClass("is-invalid");
+                        valid = false;
+                    }
+                    else if ($(this).is("select") && $(this).val() === "") {
+                        $(this).addClass("is-invalid");
+                        valid = false;
+                    }
+                    else {
+                        $(this).removeClass("is-invalid");
+                    }
+
+                });
+
+                return valid;
+            }
+        });
+    </script>
+
+}

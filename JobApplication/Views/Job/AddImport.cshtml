@@ -1,0 +1,698 @@
+﻿@inject BusinessLogic.Interfaces.ISessionHelper SessionHelper
+@{
+    ViewData["Title"] = "Add Import";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Head {
+    <link href="~/assets/libs/select2/css/select2.min.css" rel="stylesheet" type="text/css">
+
+    <style>
+        .select2-container--default .select2-selection--single {
+            min-height: calc(1.5em + .75rem + 2px);
+            border: 1px solid gray !important;
+            border-radius: .375rem;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 35px !important;
+            padding-left: 10px;
+            color: #212529 !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #000 !important; /* slightly darker gray */
+            opacity: 1 !important;
+            font-weight: 400;
+        }
+
+        .select2-container.is-invalid .select2-selection {
+            border: 1px solid #dc3545 !important;
+        }
+
+        .readonly-mode input:disabled,
+        .readonly-mode select:disabled,
+        .readonly-mode textarea:disabled,
+        .readonly-mode button:disabled {
+            background-color: #e9ecef !important;
+            opacity: 1 !important;
+            cursor: not-allowed;
+        }
+
+        .readonly-mode .select2-container--default.select2-container--disabled .select2-selection--single,
+        .readonly-mode .select2-container--default.select2-container--disabled .select2-selection--multiple {
+            background-color: #e9ecef !important;
+            cursor: not-allowed;
+        }
+
+        .readonly-mode input[readonly],
+        .readonly-mode textarea[readonly] {
+            background-color: #e9ecef !important;
+            opacity: 1 !important;
+        }
+
+    </style>
+}
+
+
+<div class="page-content">
+    <div class="container-fluid">
+        
+        <!-- start page title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Import Job</h4>
+                </div>
+            </div>
+        </div>
+        <!-- end page title -->
+
+ 
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+
+                        <form id="jobForm">
+
+                            <input type="hidden" id="Id" name="Id">
+                            <input type="hidden" id="JobNumber" name="JobNumber">
+                            <input type="hidden" id="ShipmentType" name="ShipmentType" value="1">
+
+                            <fieldset class="border rounded p-3 mb-4">
+                                <legend class="float-none w-auto px-2 form-legend">
+                                    Import Information Form
+                                </legend>
+
+                                <div class="row readonly-mode">
+
+                                    <!-- Cost Center -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="CostCenterId" class="form-label">Cost Center</label>
+                                            <select class="form-select" id="CostCenterId" name="CostCenterId" required>
+                                                <option value="">Select Cost Center</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select cost center.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Job Number -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="JobNumber" class="form-label">Job Number</label>
+                                            <input type="text" class="form-control" id="JobNumberShow" name="JobNumberShow"
+                                                   placeholder="Auto Generated" disabled>
+                                        </div>
+                                    </div>
+
+                                    <!-- Job Date -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="JobDate" class="form-label">Date</label>
+                                            <input type="date" class="form-control" id="JobDate" name="JobDate" required>
+                                            <div class="invalid-feedback">Please select job date.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Shipment Mode -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="ShipmentModeId" class="form-label">Mode of Shipment</label>
+                                            <select class="form-select" id="ShipmentModeId" name="ShipmentModeId" required>
+                                                <option value="">Select Mode</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select shipment mode.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Job Type -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="JobTypeId" class="form-label">Job Type</label>
+                                            <select class="form-select" id="JobTypeId" name="JobTypeId" required>
+                                                <option value="">Select Job Type</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select job type.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Other Job Type -->
+                                    <div class="col-md-3 d-none" id="OtherJobTypeDiv">
+                                        <div class="mb-3">
+                                            <label for="OtherJobType" class="form-label">Specify Job Type</label>
+                                            <input type="text" class="form-control" id="OtherJobType"
+                                                   name="OtherJobType" placeholder="Enter Job Type">
+                                            <div class="invalid-feedback">Please specify job type.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Customer -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="CustomerId" class="form-label">Customer</label>
+                                            <select class="form-select" id="CustomerId" name="CustomerId" required>
+                                                <option value="">Select Customer</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select customer.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Shipper -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="Shipper" class="form-label">Shipper</label>
+                                            <input type="text" class="form-control" id="Shipper" name="Shipper"
+                                                   placeholder="Enter Shipper Details" required>
+                                            <div class="invalid-feedback">Please enter shipper details.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Consignee -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="Consignee" class="form-label">Consignee</label>
+                                            <input type="text" class="form-control" id="Consignee" name="Consignee"
+                                                   placeholder="Enter Consignee Details" required>
+                                            <div class="invalid-feedback">Please enter consignee details.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Carrier -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="Carrier" class="form-label">Carrier</label>
+                                            <input type="text" class="form-control" id="Carrier" name="Carrier"
+                                                   placeholder="Shipping Line / Airline Name" required>
+                                            <div class="invalid-feedback">Please enter carrier.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Booking Date -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="BookingDate" class="form-label">Booking Date</label>
+                                            <input type="date" class="form-control" id="BookingDate" name="BookingDate" required>
+                                            <div class="invalid-feedback">Please select booking date.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- POL -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="PolId" class="form-label">POL (Port of Loading)</label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="PolId" name="PolId" required>
+                                                    <option value="">Select Port</option>
+                                                </select>
+                                                <button type="button" id="btnOpenPortLoadingModal" class="btn btn-outline-primary btn-disabled">+ Add</button>
+                                                <div class="invalid-feedback">Please select POL.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- POD -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="PodId" class="form-label">POD (Port of Discharge)</label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="PodId" name="PodId" required>
+                                                    <option value="">Select Port</option>
+                                                </select>
+                                                <button type="button" id="btnOpenPortDischargeModal" class="btn btn-outline-primary btn-disabled">+ Add</button>
+                                                <div class="invalid-feedback">Please select POD.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ETD -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="Etd" class="form-label">ETD</label>
+                                            <input type="date" class="form-control" id="Etd" name="Etd" required>
+                                            <div class="invalid-feedback">Please select ETD.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ETA -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="Eta" class="form-label">ETA</label>
+                                            <input type="date" class="form-control" id="Eta" name="Eta" required>
+                                            <div class="invalid-feedback">Please select ETA.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bayan No -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="BayanNo" class="form-label">Bayan No</label>
+                                            <input type="text" class="form-control" id="BayanNo" name="BayanNo" placeholder="Customs Bayan reference number" required>
+                                            <div class="invalid-feedback">Please enter bayan no.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- BL No -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="BlNo" class="form-label">B/L No</label>
+                                            <input type="text" class="form-control" id="BlNo" name="BlNo" placeholder="Bill of Lading number" required>
+                                            <div class="invalid-feedback">Please enter B/L no.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Container Quantity -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="ContainerQuantity" class="form-label">Container Quantity</label>
+                                            <input type="text" class="form-control" id="ContainerQuantity"
+                                                   name="ContainerQuantity" placeholder="The number and size/type of shipping containers used to transport the cargo." required>
+                                            <div class="invalid-feedback">Please enter quantity.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Container No -->
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="ContainerNo" class="form-label">Container No</label>
+                                            <select class="form-select" id="ContainerNo" name="ContainerNo[]" multiple required></select>
+                                            <div class="form-text">Type container number and press Enter.</div>
+                                            <div class="invalid-feedback">Please enter container no.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Container Type -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="ContainerTypeId" class="form-label">Container Type</label>
+                                            <select class="form-select" id="ContainerTypeId" name="ContainerTypeId" required>
+                                                <option value="">Select Type</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select container type.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bayan Print Date -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="BayanPrintDate" class="form-label">Bayan Print Date</label>
+                                            <input type="date" class="form-control" id="BayanPrintDate"
+                                                   name="BayanPrintDate" required>
+                                            <div class="invalid-feedback">Please select date.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Shipment Cleared Date -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="ShipmentClearedDate" class="form-label">Shipment Cleared Date</label>
+                                            <input type="date" class="form-control" id="ShipmentClearedDate"
+                                                   name="ShipmentClearedDate" required>
+                                            <div class="invalid-feedback">Please select date.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Delivery Date -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="DeliveryDate" class="form-label">Delivery Date</label>
+                                            <input type="date" class="form-control" id="DeliveryDate"
+                                                   name="DeliveryDate" required>
+                                            <div class="invalid-feedback">Please select date.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Arrival Date -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="ArrivalDate" class="form-label">Arrival Date</label>
+                                            <input type="date" class="form-control" id="ArrivalDate"
+                                                   name="ArrivalDate" required>
+                                            <div class="invalid-feedback">Please select date.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Delivery City -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="DeliveryCityId" class="form-label">Delivery City</label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="DeliveryCityId" name="DeliveryCityId" required>
+                                                    <option value="">Select Delivery City</option>
+                                                </select>
+                                                <button type="button" id="btnOpenDeliveryCityModal" class="btn btn-outline-primary btn-disabled">+ Add</button>
+                                                <div class="invalid-feedback">Please select delivery city.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- BL Type -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="BlTypeId" class="form-label">B/L Type</label>
+                                            <select class="form-select" id="BlTypeId" name="BlTypeId" required>
+                                                <option value="">Select Type</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select B/L type.</div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="border rounded p-3 mb-4">
+                                <legend class="float-none w-auto px-2">
+                                    Official Charges Detail
+                                </legend>
+
+                                <div class="row mb-3">
+                                    <div class="card p-0">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <button type="button" class="btn btn-primary btn-sm" id="add_invoice_row">
+                                                + Add More
+                                            </button>
+                                        </div>
+
+                                        <div id="invoice_wrapper" class="p-3">
+                                            <!-- Single Invoice Row -->
+                                            <div class="invoice_row border rounded p-3 mb-3">
+                                                <div class="row align-items-end">
+
+                                                    <!-- Payment Type -->
+                                                    <div class="col-md-3 mb-3">
+                                                        <label class="form-label">Payment Type</label>
+                                                        <select class="form-select payment_type" name="payment_type[]">
+                                                            <option value="">Select</option>
+                                                            <option value="1">Official</option>
+                                                            <option value="2">Unofficial</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <!-- Payment Details Dropdown -->
+                                                    <div class="col-md-3 mb-3">
+                                                        <label class="form-label">Headers</label>
+                                                        <select class="form-select payment_headers" name="payment_headers[]">
+                                                            <option value="">Select Headers</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <!-- Invoice No -->
+                                                    <div class="col-md-2 mb-3">
+                                                        <label class="form-label">SP Invoice No</label>
+                                                        <input type="text" class="form-control" name="invoice_no[]">
+                                                    </div>
+
+                                                    <!-- Invoice Date -->
+                                                    <div class="col-md-2 mb-3">
+                                                        <label class="form-label">SP Invoice Date</label>
+                                                        <input type="date" class="form-control" name="invoice_date[]">
+                                                    </div>
+
+                                                    <!-- Amount -->
+                                                    <div class="col-md-2 mb-3">
+                                                        <label class="form-label">Amount</label>
+                                                        <input type="number" step="0.01" class="form-control" name="amount[]">
+                                                    </div>
+
+                                                    <!-- Payment Reference -->
+                                                    <div class="col-md-3 mb-3">
+                                                        <label class="form-label">Payment Reference</label>
+                                                        <input type="text" class="form-control" name="payment_reference[]" placeholder="SADAD / Bank / Cash">
+                                                    </div>
+
+                                                    <!-- Paid By -->
+                                                    <div class="col-md-3 mb-3">
+                                                        <label class="form-label">Paid By (Name)</label>
+                                                        <input type="text" class="form-control" name="paid_by[]">
+                                                    </div>
+
+                                                    <!-- Remove Button -->
+                                                    <div class="col-md-3 mb-3">
+                                                        <button type="button" class="btn btn-danger btn-sm remove_invoice_row">
+                                                            x Remove
+                                                        </button>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                            <!-- End Invoice Row -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row readonly-mode">
+                                    <div class="card p-0">
+                                        <div class="card-body">
+                                            <div class="row">
+
+                                                <!-- Shipment Status -->
+                                                <div class="col-md-3">
+                                                    <div class="mb-3">
+                                                        <label for="ShipmentStatusId" class="form-label">Shipment Status</label>
+                                                        <select class="form-select" name="ShipmentStatusId" id="ShipmentStatusId" required>
+                                                            <option value="">Select</option>
+                                                            <option value="1">Open</option>
+                                                            <option value="2">Ongoing</option>
+                                                            <option value="3">Closed</option>
+                                                            <option value="4">Dispute</option>
+                                                        </select>
+                                                        <div class="invalid-feedback">Please select shipment status.</div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Our Invoice No -->
+                                                <div class="col-md-3">
+                                                    <div class="mb-3">
+                                                        <label for="OurInvoiceNo" class="form-label">Our Invoice No.</label>
+                                                        <input type="text" class="form-control" id="OurInvoiceNo" name="OurInvoiceNo" placeholder="Our Invoice No.">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Credit Note No -->
+                                                <div class="col-md-3">
+                                                    <div class="mb-3">
+                                                        <label for="CreditNoteNo" class="form-label">Credit Note No.</label>
+                                                        <input type="text" class="form-control" id="CreditNoteNo" name="CreditNoteNo" placeholder="Credit Note No.">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Add Invoice No -->
+                                                <div class="col-md-3">
+                                                    <div class="mb-3">
+                                                        <label for="AddInvoiceNo" class="form-label">Add Invoice No.</label>
+                                                        <input type="text" class="form-control" id="AddInvoiceNo" name="AddInvoiceNo" placeholder="Add Invoice No.">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Remarks -->
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="Remarks" class="form-label">Remarks</label>
+                                                        <textarea id="Remarks" name="Remarks" placeholder="Remarks" class="form-control textarea-my" rows="5"></textarea>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </fieldset>
+
+                            <div>
+                                <button type="button" class="btn btn-warning" onclick="fillTestJobForm()">
+                                    Auto Fill Test Data
+                                </button>
+
+                                @if ((ViewBag.EditId > 0 && SessionHelper.UserType == 4))
+                                {
+                                    <button class="btn btn-primary" type="button" id="btnSubmitInvoice">Submit</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-primary" type="button" id="btnSubmit">Submit</button>
+                                }
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
+<!-- Pol Modal -->
+<div class="modal fade" id="portLoadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Create Port</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="polPortForm">
+
+                    <input type="hidden" id="PortId" name="PortId" />
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Port Name <span class="required-label">*</span>
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               id="PolPortName"
+                               name="PolPortName"
+                               placeholder="Enter Port Name"
+                               required>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+
+                <button type="button"
+                        id="btnSavePort"
+                        class="btn btn-primary">
+                    Save Port
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Pod Modal -->
+<div class="modal fade" id="portDischargeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Create Port</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="polPortForm">
+
+                    <input type="hidden" id="PortId" name="PortId" />
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Port Name <span class="required-label">*</span>
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               id="PodPortName"
+                               name="PodPortName"
+                               placeholder="Enter Port Name"
+                               required>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+
+                <button type="button"
+                        id="btnSavePortPod"
+                        class="btn btn-primary">
+                    Save Port
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Delivery City Modal -->
+<div class="modal fade" id="deliveryCityModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Create Delivery City</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="deliveryCityForm">
+
+                    <input type="hidden" id="DeliveryCityId" name="DeliveryCityId" />
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Delivery City Name <span class="required-label">*</span>
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               id="DeliveryCityName"
+                               name="DeliveryCityName"
+                               placeholder="Enter Delivery City Name"
+                               required>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+
+                <button type="button"
+                        id="btnSaveDeliveryCity"
+                        class="btn btn-primary">
+                    Save Delivery City
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div id="globalLoader" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+background:rgba(0,0,0,0.4); z-index:9999; text-align:center; padding-top:20%;">
+    
+    <div class="spinner-border text-light" role="status"></div>
+    <div style="color:white; margin-top:10px;">Loading...</div>
+</div>
+
+@section Script {
+
+    <script src="~/assets/libs/select2/js/select2.min.js"></script>
+    
+    <script>
+        var editId = parseInt('@ViewBag.EditId') || 0;
+        var userType = parseInt('@ViewBag.UserType') || 0;
+    </script>
+
+    <script src="~/assets/js/job.js"></script>
+}

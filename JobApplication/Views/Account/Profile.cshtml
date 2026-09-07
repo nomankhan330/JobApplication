@@ -1,0 +1,228 @@
+@inject BusinessLogic.Interfaces.ISessionHelper SessionHelper
+
+@{
+    ViewData["Title"] = "Profile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box">
+                    <h4 class="mb-sm-0">Profile</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <form id="profileForm" enctype="multipart/form-data">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="UserId">
+                                        Username
+                                    </label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="UserId"
+                                           name="UserId"
+                                           readonly />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="UserName">
+                                        Full Name
+                                    </label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="UserName"
+                                           name="UserName"
+                                           required />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="Email">
+                                        Email
+                                    </label>
+                                    <input type="email"
+                                           class="form-control"
+                                           id="Email"
+                                           name="Email" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="PhoneNo">
+                                        Phone Number
+                                    </label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="PhoneNo"
+                                           name="PhoneNo" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="Cnic">
+                                        CNIC
+                                    </label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="Cnic"
+                                           name="Cnic" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="Password">
+                                        New Password
+                                    </label>
+                                    <input type="password"
+                                           class="form-control"
+                                           id="Password"
+                                           name="Password"
+                                           autocomplete="new-password" />
+                                    <small class="text-muted">
+                                        Leave blank to keep the current password.
+                                    </small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="PhotoFile">
+                                        Profile Photo
+                                    </label>
+                                    <input type="file"
+                                           class="form-control"
+                                           id="PhotoFile"
+                                           name="PhotoFile"
+                                           accept="image/*" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <img id="PhotoPreview"
+                                         src=""
+                                         alt="Profile photo"
+                                         style="max-width:150px; display:none; border:1px solid #ccc; padding:5px; border-radius:5px;" />
+                                </div>
+                            </div>
+
+                            <button type="button"
+                                    id="btnUpdateProfile"
+                                    class="btn btn-primary">
+                                Update Profile
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Script {
+    <script>
+        $(document).ready(function () {
+            loadProfile();
+
+            $("#PhotoFile").on("change", function () {
+                const file = this.files[0];
+
+                if (!file) {
+                    return;
+                }
+
+                const reader = new FileReader();
+
+                reader.onload = function (event) {
+                    $("#PhotoPreview")
+                        .attr("src", event.target.result)
+                        .show();
+                };
+
+                reader.readAsDataURL(file);
+            });
+
+            $("#btnUpdateProfile").on("click", function () {
+                const form = $("#profileForm")[0];
+
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                const formData = new FormData(form);
+                const button = $(this);
+
+                $.ajax({
+                    url: "/Account/UpdateProfile",
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    beforeSend: function () {
+                        button.prop("disabled", true)
+                            .text("Processing...");
+                    },
+                    success: function (data) {
+                        if (data.errorCode === 200) {
+                            showMessage(
+                                "Profile updated successfully",
+                                "success");
+
+                            setTimeout(function () {
+                                window.location.reload();
+                            }, 800);
+                        } else {
+                            showMessage(
+                                data.errorMessage || "Unable to update profile",
+                                "error");
+                        }
+                    },
+                    error: function () {
+                        showMessage(
+                            "An error occurred while updating the profile",
+                            "error");
+                    },
+                    complete: function () {
+                        button.prop("disabled", false)
+                            .text("Update Profile");
+                    }
+                });
+            });
+        });
+
+        function loadProfile() {
+            
+            $.ajax({
+                url: "/Account/GetProfile",
+                type: "POST",
+                success: function (data) {
+                    if (data.errorCode !== 200) {
+                        showMessage(data.errorMessage, "error");
+                        return;
+                    }
+
+                    const user = data.user;
+                    console.log("user", user);
+
+                    $("#UserId").val(user.UserId || "");
+                    $("#UserName").val(user.UserName || "");
+                    $("#Email").val(user.Email || "");
+                    $("#PhoneNo").val(user.PhoneNo|| "");
+                    $("#Cnic").val(user.Cnic || "");
+
+                    if (user.Photo) {
+                        $("#PhotoPreview")
+                            .attr("src", "/uploads/users/" + user.Photo)
+                            .show();
+                    }
+                },
+                error: function () {
+                    showMessage(
+                        "Unable to load profile",
+                        "error");
+                }
+            });
+        }
+    </script>
+}

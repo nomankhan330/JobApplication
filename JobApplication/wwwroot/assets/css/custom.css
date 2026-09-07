@@ -1,0 +1,640 @@
+﻿/* Modal fade-in + slide animation */
+.show-modal-animate .modal-dialog {
+    animation: modalFadeIn 0.4s ease-out;
+}
+
+/* Main animation */
+@keyframes modalFadeIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Optional: Modal shadow & border radius */
+.modal-content {
+    /*border-radius: 12px;*/
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+}
+
+.modal-header {
+    background-color: #252B3B;
+}
+
+.modal-title {
+    color: aliceblue;
+}
+
+.btn-close {
+    filter: invert(1);
+}
+
+
+.required-label {
+    color: red;
+    font-weight: bold;
+    margin-left: 3px;
+}
+
+
+legend {
+    font-family: Cambria, "Times New Roman", serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+
+/* All input textboxes */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+textarea,
+select {
+    border: 1px solid gray;
+    border-radius: 5px;
+    outline: none;
+}
+
+.textarea-my {
+    border: 1px solid gray!important;
+    border-radius: 5px;
+    outline: none;
+}
+
+.select-my {
+    border: 1px solid gray !important;
+    border-radius: 5px;
+    outline: none;
+}
+
+.select2-container .select2-selection--multiple {
+    min-height: calc(1.5em + .75rem + 2px);
+    border: 1px solid gray!important;
+    border-radius: .375rem;
+}
+
+/*.select2-search__field {
+    border: 1px solid gray!important;
+    border-radius: 5px!important;
+    outline: none!important;
+}*/
+
+/* Focus hone par border color */
+input:focus,
+textarea:focus {
+    border-color: #28a745;
+    box-shadow: none;
+}
+
+.form-select {
+    border: 1px solid gray;
+    border-radius: 5px;
+    outline: none;
+}
+
+.vertical-menu{
+    width:255px !important;
+}
+
+
+/* Sidebar Background */
+.vertical-menu {
+    background: #1e293b !important; /* Dark Slate */
+}
+
+/* Menu Title */
+#sidebar-menu ul li.menu-title {
+    color: #94a3b8 !important;
+}
+
+/* Main Menu Links */
+#sidebar-menu ul li a {
+    color: #e2e8f0 !important;
+}
+
+    /* Icons */
+    #sidebar-menu ul li a i {
+        color: #cbd5e1 !important;
+    }
+
+    /* Hover Effect */
+    #sidebar-menu ul li a:hover {
+        color: #ffffff !important;
+        background-color: #334155 !important;
+    }
+
+    /* Active Menu */
+    #sidebar-menu ul li.mm-active > a,
+    #sidebar-menu ul li a.active {
+        color: #ffffff !important;
+        background-color: #475569 !important;
+    }
+
+/* Sub Menu */
+#sidebar-menu ul li ul.sub-menu li a {
+    color: #cbd5e1 !important;
+}
+
+#sidebar-menu ul li ul.sub-menu li a:hover {
+    color: #ffffff !important;
+    background-color: #334155 !important;
+}
+
+/* User Profile Section */
+.user-profile {
+background: #0f172a;
+color: #ffffff;
+padding: 15px 0;
+}
+
+.user-profile h4,
+.user-profile span {
+    color: #ffffff !important;
+}
+
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .3px;
+}
+
+.status-active {
+    background: #d1f0dd;
+    color: #0f5132;
+    border: 1px solid #198754;
+}
+
+.status-inactive {
+    background: #fdeaea;
+    color: #dc3545;
+    border: 1px solid #f5c2c7;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-active .status-dot {
+    background: #198754;
+}
+
+.status-inactive .status-dot {
+    background: #dc3545;
+}
+
+
+
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Admin */
+.type-admin {
+    background: #e7f1ff;
+    color: #0d6efd;
+    border: 1px solid #b6d4fe;
+}
+
+/* Authorize */
+.type-authorize {
+    background: #d1f0dd;
+    color: #0f5132;
+    border: 1px solid #198754;
+}
+
+/* UnAuthorize */
+.type-unauthorize {
+    background: #fdeaea;
+    color: #842029;
+    border: 1px solid #dc3545;
+}
+
+/* Default */
+.type-default {
+    background: #f1f3f5;
+    color: #495057;
+    border: 1px solid #ced4da;
+}
+
+.costcenter-badge {
+    display: inline-block;
+    background: #eef4ff;
+    color: #0d6efd;
+    border: 1px solid #cfe2ff;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    margin: 2px;
+    white-space: nowrap;
+    transition: all .2s ease;
+}
+
+.costcenter-badge:hover {
+    background: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
+}
+
+
+
+
+
+/* Container */
+.action-btn-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Base Button */
+.action-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    cursor: pointer;
+    transition: all .25s ease;
+    box-shadow: 0 3px 8px rgba(0,0,0,.08);
+}
+
+    .action-btn i {
+        font-size: 14px;
+    }
+
+    /* Hover */
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,.15);
+    }
+
+/* VIEW */
+.btn-view {
+    background: linear-gradient(135deg,#17a2b8,#0dcaf0);
+}
+
+.btn-view:hover {
+    background: linear-gradient(135deg,#0dcaf0,#17a2b8);
+}
+
+/* EDIT */
+.btn-edit {
+    background: linear-gradient(135deg,#0d6efd,#4f8cff);
+}
+
+.btn-edit:hover {
+    background: linear-gradient(135deg,#4f8cff,#0d6efd);
+}
+
+/* ARCHIVE */
+.btn-archive {
+    background: linear-gradient(135deg,#6c757d,#adb5bd);
+}
+
+.btn-archive:hover {
+    background: linear-gradient(135deg,#adb5bd,#6c757d);
+}
+
+/* DELETE */
+.btn-delete {
+    background: linear-gradient(135deg,#dc3545,#ff6b6b);
+}
+
+.btn-delete:hover {
+    background: linear-gradient(135deg,#ff6b6b,#dc3545);
+}
+
+/* TOGGLE */
+.btn-toggle {
+    background: linear-gradient(135deg,#dc3545,#ff6b6b);
+}
+
+.btn-toggle:hover {
+    background: linear-gradient(135deg,#ff6b6b,#dc3545);
+}
+
+
+.action-btn.btn-info {
+    background: #0dcaf0;
+    color: #fff;
+}
+
+.action-btn.btn-info:hover {
+    background: #31d2f2;
+}
+
+.action-btn.btn-success {
+    background: #198754;
+    color: #fff;
+}
+
+.action-btn.btn-success:hover {
+    background: #157347;
+}
+
+.action-btn.btn-danger {
+    background: #dc3545;
+    color: #fff;
+}
+
+.action-btn.btn-danger:hover {
+    background: #bb2d3b;
+}
+
+.action-btn.btn-secondary {
+    background: #6c757d;
+    color: #fff;
+}
+
+.action-btn.btn-secondary:hover {
+    background: #5c636a;
+}
+
+/*.action-btn.btn-danger {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #fff !important;
+}
+
+.action-btn.btn-danger:hover {
+    background-color: #bb2d3b !important;
+    border-color: #b02a37 !important;
+}*/
+
+.badge{
+    font-size:12px;
+}
+
+
+.select2-container--default .select2-selection--single {
+    min-height: calc(1.5em + .75rem + 2px);
+    border: 1px solid gray !important;
+    border-radius: .375rem;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 35px !important;
+    padding-left: 10px;
+    color: #212529 !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #000 !important; /* slightly darker gray */
+    opacity: 1 !important;
+    font-weight: 400;
+}
+
+.select2-container.is-invalid .select2-selection {
+    border: 1px solid #dc3545 !important;
+}
+
+.table-striped thead th {
+    background-color: #252B3B !important;
+    color: #fff !important;
+    font-weight: 500;
+    padding: 4px 6px !important;
+    line-height: 1.5 !important;
+    height: 26px !important;
+}
+
+
+/* ==========================================================================
+   1. DataTables Split Header Alignment, Scroll Fix & White Borders Setup
+   ========================================================================== */
+.dataTables_scroll,
+.dataTables_scrollHead,
+.dataTables_scrollHeadInner,
+.dataTables_scrollBody {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    position: relative !important;
+}
+
+    .dataTables_scrollHeadInner,
+    .dataTables_scrollHeadInner > table.dataTable {
+        width: 100% !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        border-bottom: none !important;
+    }
+
+    .dataTables_scrollBody > table.dataTable {
+        margin-top: 0 !important;
+    }
+
+/* ScrollBody Container Minimum Height (Loader Overlap Fix) */
+.dataTables_wrapper .dataTables_scrollBody,
+#datatable tbody,
+#exportDatatable tbody {
+    min-height: 250px !important;
+    position: relative !important;
+}
+
+/* Header Alignment Mismatch & Split Dark Block Removal */
+.dataTables_scrollBody table thead tr {
+    visibility: collapse !important;
+    height: 0 !important;
+}
+
+.dataTables_scrollBody table thead th {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    height: 0 !important;
+    line-height: 0 !important;
+}
+
+/* Table Reset */
+table.dataTable,
+table.custom-datatable {
+    margin: 0 !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+}
+
+/* Header Cells: White Borders Setup */
+.custom-datatable thead th,
+.dataTables_scrollHead table thead th {
+    background-color: #252b3b !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 10px 12px !important;
+    vertical-align: middle !important;
+    white-space: nowrap;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important;
+    line-height: normal !important;
+    height: auto !important;
+}
+
+/* Floating FixedHeader Support With White Borders */
+table.fixedHeader-floating,
+table.fixedHeader-locked {
+    background-color: #252b3b !important;
+    z-index: 999 !important;
+    margin-top: 0 !important;
+}
+
+    table.fixedHeader-floating th,
+    table.fixedHeader-locked th {
+        background-color: #252b3b !important;
+        color: #ffffff !important;
+        border-left: none !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important;
+    }
+
+.custom-datatable thead th:last-child,
+.dataTables_scrollHead table thead th:last-child {
+    border-right: none !important;
+}
+
+/* Body Cells Vertical & Horizontal Borders */
+.custom-datatable tbody td {
+    font-size: 13px;
+    padding: 8px 12px !important;
+    vertical-align: middle !important;
+    white-space: nowrap;
+    border-right: 1px solid #e9ecef !important;
+    border-bottom: 1px solid #e9ecef !important;
+}
+
+.custom-datatable tbody tr:hover {
+    background-color: rgba(37, 43, 59, 0.04) !important;
+}
+
+/* Loader Positioning Fix (Header ke neeche Table Center me) */
+div.dataTables_wrapper div.dataTables_processing {
+    position: absolute !important;
+    top: 160px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    margin: 0 !important;
+    width: auto !important;
+    min-width: 140px !important;
+    height: auto !important;
+    z-index: 10 !important;
+    background: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    padding: 12px 24px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Controls Row Layout */
+.dataTables_wrapper .row:first-child {
+    margin-bottom: 8px !important;
+}
+
+/* Outer Wrapper Gap Reset */
+.dataTables_wrapper {
+    position: relative !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* "Showing 1 to 10 of 829 entries" Spacing Fix */
+.dataTables_wrapper .dataTables_info {
+    padding-top: 8px !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    font-size: 13px;
+    color: #6c757d;
+}
+
+/* ==========================================================================
+2. Fixed Bottom-Right Pagination Setup
+========================================================================== */
+.dataTables_wrapper .dataTables_paginate {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 25px !important;
+    z-index: 1050 !important;
+    background-color: #ffffff !important;
+    padding: 6px 12px !important;
+    border-radius: 50px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid #e9ecef !important;
+    margin-top: 0 !important;
+}
+
+    .dataTables_wrapper .dataTables_paginate .pagination {
+        justify-content: flex-end !important;
+        margin: 0 !important;
+    }
+
+.dataTables_wrapper .pagination .page-item .page-link {
+    border-radius: 50px !important;
+    margin: 0 2px;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    padding: 0;
+    text-align: center;
+    color: #495057;
+    border: 1px solid #e9ecef;
+    font-weight: 500;
+    font-size: 12px;
+    background-color: #ffffff;
+}
+
+.dataTables_wrapper .pagination .page-item.active .page-link {
+    background-color: #252b3b !important;
+    border-color: #252b3b !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 5px rgba(37, 43, 59, 0.3);
+}
+
+.dataTables_wrapper .pagination .page-item .page-link:hover {
+    background-color: #f8f9fa;
+    color: #252b3b;
+}
+
+
+.invoice-input {
+    width: 30%;
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 10px 15px;
+    font-size: 15px;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.invoice-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}

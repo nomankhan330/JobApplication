@@ -1,0 +1,638 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Head {
+
+    <!-- DataTables -->
+    <link href="~/assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/libs/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        .dataTables_paginate {
+            text-align: right !important;
+        }
+
+        .pagination-rounded .page-link {
+            border-radius: 50px !important;
+        }
+
+        .dataTables_paginate .pagination {
+            justify-content: flex-end !important;
+        }
+
+        /* Clickable KPI Card Hover Styling */
+        .kpi-card-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+            .kpi-card-link:hover .card {
+                transform: translateY(-3px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            }
+    </style>
+}
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- Page Title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Dashboard</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TOP KPI CARDS GRID (4 COLUMNS DESKTOP / RESPONSIVE WRAP)       -->
+        <!-- ============================================================== -->
+        <!-- ROW 1: Operations Overview -->
+        <div class="row">
+
+            <!-- 1. Total Jobs -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <a href="#" class="kpi-card-link">
+                    <div class="card h-100 mb-0">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="text-truncate font-size-13 text-muted mb-1">TOTAL JOBS</p>
+                                    <h3 class="mb-0 fw-bold">0</h3>
+                                </div>
+
+                                <div class="avatar-sm">
+                                    <span class="avatar-title bg-light text-primary rounded-3">
+                                        <i class="ri-archive-line font-size-22"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 2. Export Jobs -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <a href="#" class="kpi-card-link">
+                    <div class="card h-100 mb-0">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="text-truncate font-size-13 text-muted mb-1">EXPORT JOBS</p>
+                                    <h3 class="mb-0 fw-bold">0</h3>
+                                </div>
+
+                                <div class="avatar-sm">
+                                    <span class="avatar-title bg-light text-warning rounded-3">
+                                        <i class="ri-plane-line font-size-22"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 3. Import Jobs -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <a href="#" class="kpi-card-link">
+                    <div class="card h-100 mb-0">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="text-truncate font-size-13 text-muted mb-1">IMPORT JOBS</p>
+                                    <h3 class="mb-0 fw-bold">0</h3>
+                                </div>
+
+                                <div class="avatar-sm">
+                                    <span class="avatar-title bg-light text-info rounded-3">
+                                        <i class="ri-ship-line font-size-22"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 4. Total Users -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <a href="#" class="kpi-card-link">
+                    <div class="card h-100 mb-0">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="text-truncate font-size-13 text-muted mb-1">TOTAL USERS</p>
+                                    <h3 class="mb-0 fw-bold">0</h3>
+                                </div>
+
+                                <div class="avatar-sm">
+                                    <span class="avatar-title bg-light text-success rounded-3">
+                                        <i class="ri-user-shared-line font-size-22"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- ROW 2: Master Data & Invoices -->
+        <div class="row">
+
+            <!-- 5. Cost Centers -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <a href="#" class="kpi-card-link">
+                    <div class="card h-100 mb-0">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="text-truncate font-size-13 text-muted mb-1">COST CENTERS</p>
+                                    <h3 class="mb-0 fw-bold">0</h3>
+                                </div>
+
+                                <div class="avatar-sm">
+                                    <span class="avatar-title bg-light text-secondary rounded-3">
+                                        <i class="ri-building-line font-size-22"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 6. Customers -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <a href="#" class="kpi-card-link">
+                    <div class="card h-100 mb-0">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="text-truncate font-size-13 text-muted mb-1">CUSTOMERS</p>
+                                    <h3 class="mb-0 fw-bold">0</h3>
+                                </div>
+
+                                <div class="avatar-sm">
+                                    <span class="avatar-title bg-light text-primary rounded-3">
+                                        <i class="ri-group-line font-size-22"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 7. Service Providers -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <a href="#" class="kpi-card-link">
+                    <div class="card h-100 mb-0">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="text-truncate font-size-13 text-muted mb-1">SERVICE PROVIDERS</p>
+                                    <h3 class="mb-0 fw-bold">0</h3>
+                                </div>
+
+                                <div class="avatar-sm">
+                                    <span class="avatar-title bg-light text-dark rounded-3">
+                                        <i class="ri-truck-line font-size-22"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 8. Sales Invoices -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <a href="#" class="kpi-card-link">
+                    <div class="card h-100 mb-0">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="text-truncate font-size-13 text-muted mb-1">SALES INVOICES</p>
+                                    <h3 class="mb-0 fw-bold">0</h3>
+                                </div>
+
+                                <div class="avatar-sm">
+                                    <span class="avatar-title bg-light text-info rounded-3">
+                                        <i class="ri-file-list-3-line font-size-22"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- ROW 3: Financial Totals -->
+        <div class="row">
+
+            <!-- 9. Purchase Invoices -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <a href="#" class="kpi-card-link">
+                    <div class="card h-100 mb-0">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="text-truncate font-size-13 text-muted mb-1">PURCHASE INVOICES</p>
+                                    <h3 class="mb-0 fw-bold">0</h3>
+                                </div>
+
+                                <div class="avatar-sm">
+                                    <span class="avatar-title bg-light text-warning rounded-3">
+                                        <i class="ri-receipt-line font-size-22"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 10. Total Sales Revenue -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="text-truncate font-size-13 text-muted mb-1">SALES REVENUE</p>
+                                <h3 class="mb-0 fw-bold text-success">Rs. 0</h3>
+                            </div>
+
+                            <div class="avatar-sm">
+                                <span class="avatar-title bg-light text-success rounded-3">
+                                    <i class="mdi mdi-currency-usd font-size-22"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11. Service Provider Outstanding -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="text-truncate font-size-13 text-muted mb-1">SP OUTSTANDING</p>
+                                <h3 class="mb-0 fw-bold text-danger">Rs. 0</h3>
+                            </div>
+
+                            <div class="avatar-sm">
+                                <span class="avatar-title bg-light text-danger rounded-3">
+                                    <i class="ri-hand-coin-line font-size-22"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12. System / Operational Status Indicator -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="text-truncate font-size-13 text-muted mb-1">SYSTEM STATUS</p>
+                                <h3 class="mb-0 fw-bold text-primary">Active</h3>
+                            </div>
+
+                            <div class="avatar-sm">
+                                <span class="avatar-title bg-light text-primary rounded-3">
+                                    <i class="ri-shield-check-line font-size-22"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- EXISTING CHARTS & TABLES                                      -->
+        <!-- ============================================================== -->
+        <!-- Charts Row -->
+        <div class="row">
+
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-body pb-0">
+
+                        <div class="float-end d-none d-md-inline-block">
+                            <div class="dropdown card-header-dropdown">
+                                <a class="text-reset dropdown-btn"
+                                   href="#"
+                                   data-bs-toggle="dropdown"
+                                   aria-haspopup="true"
+                                   aria-expanded="false">
+                                    <span class="text-muted">
+                                        Report
+                                        <i class="mdi mdi-chevron-down ms-1"></i>
+                                    </span>
+                                </a>
+
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <a class="dropdown-item" href="#">Export CSV</a>
+                                    <a class="dropdown-item" href="#">Download PDF</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h4 class="card-title mb-4">Sales vs Purchases Trend</h4>
+
+                        <div class="text-center pt-3">
+                            <div class="row">
+
+                                <div class="col-sm-4 mb-3 mb-sm-0">
+                                    <div class="d-inline-flex">
+                                        <h5 class="me-2">Rs. 845,000</h5>
+                                    </div>
+                                    <p class="text-muted text-truncate mb-0">
+                                        Sales (This Week)
+                                    </p>
+                                </div>
+
+                                <div class="col-sm-4 mb-3 mb-sm-0">
+                                    <div class="d-inline-flex">
+                                        <h5 class="me-2">Rs. 320,000</h5>
+                                    </div>
+                                    <p class="text-muted text-truncate mb-0">
+                                        Purchases (This Week)
+                                    </p>
+                                </div>
+
+                                <div class="col-sm-4">
+                                    <div class="d-inline-flex">
+                                        <h5 class="me-2">Rs. 525,000</h5>
+                                    </div>
+                                    <p class="text-muted text-truncate mb-0">
+                                        Net Margin
+                                    </p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body py-0 px-2">
+                        <div id="area_chart" class="apex-charts" dir="ltr"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-body pb-0">
+
+                        <div class="float-end d-none d-md-inline-block">
+                            <div class="dropdown">
+                                <a class="text-reset"
+                                   href="#"
+                                   data-bs-toggle="dropdown"
+                                   aria-haspopup="true"
+                                   aria-expanded="false">
+                                    <span class="text-muted">
+                                        This Year
+                                        <i class="mdi mdi-chevron-down ms-1"></i>
+                                    </span>
+                                </a>
+
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <a class="dropdown-item" href="#">Last Month</a>
+                                    <a class="dropdown-item" href="#">This Year</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h4 class="card-title mb-4">
+                            Revenue Billing vs Cash Collection
+                        </h4>
+
+                        <div class="text-center pt-3">
+                            <div class="row">
+
+                                <div class="col-sm-4 mb-3 mb-sm-0">
+                                    <div>
+                                        <h5>Rs. 2,450,000</h5>
+                                        <p class="text-muted text-truncate mb-0">
+                                            Total Invoiced
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="col-sm-4 mb-3 mb-sm-0">
+                                    <div>
+                                        <h5>Rs. 1,850,000</h5>
+                                        <p class="text-muted text-truncate mb-0">
+                                            Collected Cash
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="col-sm-4">
+                                    <div>
+                                        <h5>Rs. 600,000</h5>
+                                        <p class="text-muted text-truncate mb-0">
+                                            Remaining Recovery
+                                        </p>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body py-0 px-2">
+                        <div id="column_line_chart" class="apex-charts" dir="ltr"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Tables & Donut Chart Row -->
+        <div class="row">
+
+            <div class="col-xl-8">
+                <div class="card">
+                    <div class="card-body">
+
+                        <div class="dropdown float-end">
+                            <a href="#"
+                               class="dropdown-toggle arrow-none card-drop"
+                               data-bs-toggle="dropdown"
+                               aria-expanded="false">
+                                <i class="mdi mdi-dots-vertical"></i>
+                            </a>
+
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <a href="javascript:void(0);" class="dropdown-item">
+                                    View All Sales Invoices
+                                </a>
+
+                                <a href="javascript:void(0);" class="dropdown-item">
+                                    View All Purchase Invoices
+                                </a>
+                            </div>
+                        </div>
+
+                        <h4 class="card-title mb-4">
+                            Recent Invoices & Status
+                        </h4>
+
+                        <div class="table-responsive">
+                            <table class="table table-centered mb-0 align-middle table-hover table-nowrap">
+
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Invoice No</th>
+                                        <th>Party Name</th>
+                                        <th>Type</th>
+                                        <th>BL Number</th>
+                                        <th>Grand Total</th>
+                                        <th style="width: 120px;">Status</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+
+                                    <tr>
+                                        <td>
+                                            <h6 class="mb-0">INV-2024-001</h6>
+                                        </td>
+
+                                        <td>Al-Noor Logistics</td>
+
+                                        <td>
+                                            <span class="badge badge-soft-primary">
+                                                Sales
+                                            </span>
+                                        </td>
+
+                                        <td>BL-99231A</td>
+
+                                        <td>Rs. 45,000.00</td>
+
+                                        <td>
+                                            <div class="font-size-13">
+                                                <i class="ri-checkbox-blank-circle-fill font-size-10 text-success align-middle me-2"></i>
+                                                Paid
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <h6 class="mb-0">PINV-2024-042</h6>
+                                        </td>
+
+                                        <td>Swift Shipping Line</td>
+
+                                        <td>
+                                            <span class="badge badge-soft-warning">
+                                                Purchase
+                                            </span>
+                                        </td>
+
+                                        <td>BL-88123B</td>
+
+                                        <td>Rs. 120,000.00</td>
+
+                                        <td>
+                                            <div class="font-size-13">
+                                                <i class="ri-checkbox-blank-circle-fill font-size-10 text-danger align-middle me-2"></i>
+                                                Unpaid
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card">
+                    <div class="card-body">
+
+                        <div class="float-end">
+                            <select class="form-select shadow-none form-select-sm">
+                                <option selected>This Month</option>
+                                <option value="1">Last Month</option>
+                                <option value="2">This Year</option>
+                            </select>
+                        </div>
+
+                        <h4 class="card-title mb-4">
+                            Job Operations Share
+                        </h4>
+
+                        <div class="row">
+
+                            <div class="col-4">
+                                <div class="text-center mt-4">
+                                    <h5>55%</h5>
+                                    <p class="mb-2 text-truncate">
+                                        Sea Import
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="col-4">
+                                <div class="text-center mt-4">
+                                    <h5>30%</h5>
+                                    <p class="mb-2 text-truncate">
+                                        Air Import
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="col-4">
+                                <div class="text-center mt-4">
+                                    <h5>15%</h5>
+                                    <p class="mb-2 text-truncate">
+                                        Local Log.
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="mt-4">
+                            <div id="donut-chart" class="apex-charts"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+@section Script {
+
+    <script src="~/assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="~/assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="~/assets/libs/apexcharts/apexcharts.min.js"></script>
+    <script src="~/assets/js/pages/dashboard.init.js"></script>
+
+}

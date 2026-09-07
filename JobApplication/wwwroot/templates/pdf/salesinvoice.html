@@ -1,0 +1,458 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+
+    <style>
+
+        body {
+            font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #222;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        .invoice-container {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10mm;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .header-table td {
+            vertical-align: top;
+        }
+
+        .company-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .arabic-title {
+            font-size: 18px;
+            font-weight: bold;
+            direction: rtl;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #0d6efd;
+            margin-bottom: 8px;
+        }
+
+        .info-box {
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 180px;
+            vertical-align: top;
+        }
+
+        .shipment-table td {
+            padding: 4px 0;
+            vertical-align: top;
+            width:75%;
+        }
+
+        .shipment-label {
+            width: 45%;
+            font-weight: bold;
+        }
+
+        .invoice-table {
+            margin-top: 10px;
+        }
+
+        .invoice-table th {
+            background: #0d6efd;
+            color: #fff;
+            border: 1px solid #ccc;
+            padding: 6px;
+            font-size: 14px;
+        }
+
+        .invoice-table td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            font-size: 14px;
+        }
+
+        .summary-table th,
+        .summary-table td {
+            border: 1px solid #ccc;
+            padding: 6px;
+        }
+
+        .amount-box {
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 181px;
+        }
+
+        .bank-table td {
+            padding: 3px 0;
+        }
+
+        .footer-note {
+            margin-top: 10px;
+            font-size: 11px;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tfoot {
+            display: table-footer-group;
+        }
+
+        .remarks-title {
+            display: inline-block;
+            border-top: 1px solid #000;
+            padding-top: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 170px;
+            margin-bottom: 40px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="invoice-container">
+
+        <!-- HEADER -->
+        <table class="header-table">
+
+            <tr>
+
+                <td width="50%">
+
+                    <div class="company-title">
+                        {{CompanyName}}
+                    </div>
+
+                    <div>{{EstablishmentName}}</div>
+                    <div>{{City}}, {{Country}}</div>
+                    <div>VAT: {{VATNumber}}</div>
+
+                </td>
+
+                <td width="50%" class="text-right" dir="rtl">
+
+                    <!--<div class="arabic-title">
+                            مؤسسة هاديا غلوبل لوجيستكس
+                        </div>
+
+                        <div>8156 المدينة المنورة 4391 حي البغدادية الغربية جدة</div>
+                        <div>المملكة العربية السعودية</div>
+                        <div>رقم ضريبة القيمة المضافة: 3113041577000003</div>-->
+
+
+                    <div class="arabic-title">
+                        {{CompanyNameAr}}
+                    </div>
+
+                    <div>{{EstablishmentNameAr}}</div>
+                    <div>{{CityAr}}، {{CountryAr}}</div>
+                    <div>رقم ضريبة القيمة المضافة: {{VATNumber}}</div>
+
+                </td>
+
+            </tr>
+
+        </table>
+
+        <hr>
+
+        <!-- TITLE -->
+        <table>
+
+            <tr>
+
+                <td width="50%"></td>
+
+                <td width="50%" class="text-right">
+
+                    <h2 style="margin:0;">
+                        Sales Invoice / فاتورة مبيعات
+                    </h2>
+
+                    <div>Invoice No: {{InvoiceNo}}</div>
+                    <div>Date: {{InvoiceDate}}</div>
+                    <div>Status: {{InvoiceStatus}}</div>
+
+                </td>
+
+            </tr>
+
+        </table>
+
+        <br>
+
+        <!-- CUSTOMER + SHIPMENT -->
+        <table>
+
+            <tr>
+
+                <td width="50%" class="info-box">
+
+                    <div class="section-title">
+                        Buyer / Customer
+                    </div>
+
+                    <b>{{CustomerName}}</b>  <b>{{CustomerNameAr}}</b> <br>
+                    {{CustomerAddress}}<br>
+                    {{CustomerCity}}<br>
+                    VAT: {{CustomerVAT}}
+
+                </td>
+
+                <td width="50%" class="info-box">
+
+                    <div class="section-title">
+                        SHIPMENT DETAILS
+                    </div>
+
+                    <table class="shipment-table">
+
+                        <tr>
+                            <td class="shipment-label">Job Number:</td>
+                            <td>{{JobNumber}}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="shipment-label">Mode of Shipment:</td>
+                            <td>{{ModeOfShipment}}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="shipment-label">Type of Shipment:</td>
+                            <td>{{ShipmentType}}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="shipment-label">POL:</td>
+                            <td>{{POL}}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="shipment-label">POD:</td>
+                            <td>{{POD}}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="shipment-label">B/L Number:</td>
+                            <td>{{BLNumber}}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="shipment-label">Payment Terms:</td>
+                            <td>{{PaymentTerms}}</td>
+                        </tr>
+
+                    </table>
+
+                </td>
+
+            </tr>
+
+        </table>
+
+        <br>
+
+        <!-- INVOICE TABLE -->
+        <table class="invoice-table">
+
+            <thead>
+
+                <tr>
+                    <th>#</th>
+                    <th>Type</th>
+                    <th>Detail</th>
+                    <th>Unit</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    <th>Amount</th>
+                    <th>VAT</th>
+                    <th>Total</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {{InvoiceRows}}
+
+            </tbody>
+
+        </table>
+
+        <br>
+
+        <!-- SUMMARY -->
+        <table>
+
+            <tr>
+
+                <td width="60%" valign="top">
+
+                    <div class="amount-box">
+
+                        <div class="section-title">
+                            Amount In Words
+                        </div>
+
+                        <strong>
+                            {{AmountInWords}}
+                        </strong>
+
+                    </div>
+
+                </td>
+
+                <td width="40%" valign="top">
+
+                    <table class="summary-table">
+
+                        <tr>
+                            <th>Total</th>
+                            <td>{{Total}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Advance</th>
+                            <td>{{Advance}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Discount</th>
+                            <td>{{Discount}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Net</th>
+                            <td>{{NetAmount}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>VAT</th>
+                            <td>{{VAT}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Grand Total</th>
+                            <td><strong>{{GrandTotal}}</strong></td>
+                        </tr>
+
+                    </table>
+
+                </td>
+
+            </tr>
+
+        </table>
+
+        <br> <br>  <br> <br>
+
+        <!-- BANK DETAILS -->
+        <table>
+
+            <tr>
+
+                <td width="70%" valign="top">
+
+                    <div class="remarks-title">
+
+                        Remarks - ملاحظات
+
+                    </div>
+
+                    <div class="section-title">
+                        OUR BANK A/C DETAILS
+                    </div>
+
+                    <table class="bank-table">
+
+                        <tr>
+                            <td width="120"><strong>A/C No</strong></td>
+                            <td>1234567890</td>
+                        </tr>
+
+                        <tr>
+                            <td width="120"><strong>A/C Title</strong></td>
+                            <td>HADIA GLOBAL LOGISTICS</td>
+                        </tr>
+
+                        <tr>
+                            <td width="120"><strong>Bank</strong></td>
+                            <td>Al Rajhi Bank</td>
+                        </tr>
+
+                        <tr>
+                            <td width="120"><strong>Branch</strong></td>
+                            <td>Jeddah Branch</td>
+                        </tr>
+
+                        <tr>
+                            <td width="120"><strong>SWIFT Code</strong></td>
+                            <td>RJHISARI</td>
+                        </tr>
+
+                        <tr>
+                            <td width="120"><strong>IBAN Code</strong></td>
+                            <td>SA0380000000608010167519</td>
+                        </tr>
+
+                    </table>
+
+                </td>
+
+                <td width="30%" class="text-center">
+
+                    {{QRCodeValue}}
+
+                </td>
+
+            </tr>
+
+        </table>
+
+        <hr>
+
+        <!-- FOOTER -->
+        <div class="footer-note">
+
+            This is a computer-generated invoice and does not require signature or stamp.
+
+            <br><br>
+
+            Print Date: {{PrintDate}}
+
+        </div>
+
+    </div>
+
+</body>
+</html>

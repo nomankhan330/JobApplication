@@ -1,0 +1,468 @@
+﻿@{
+    ViewData["Title"] = "Customers";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Head {
+    <!-- DataTables -->
+    <link href="~/assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/libs/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        .dataTables_paginate {
+            text-align: right !important;
+        }
+
+        .pagination-rounded .page-link {
+            border-radius: 50px !important;
+        }
+
+        .dataTables_paginate .pagination {
+            justify-content: flex-end !important;
+        }
+    </style>
+}
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- Page Title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Customers</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+
+                        <!-- Filter Button -->
+                        <div class="mb-3">
+                            <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection">
+                                <i class="fa fa-filter"></i> Filter Customers
+                            </button>
+                        </div>
+
+                        <!-- Filter Section -->
+                        <div class="collapse" id="filterSection">
+                            <div class="card mb-3 p-3">
+
+                                <div class="row mb-3">
+
+                                    <div class="col-md-3">
+                                        <input id="filterCustomerName" class="form-control" placeholder="Customer Name">
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <input id="filterEmail" class="form-control" placeholder="Email">
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <input id="filterVatId" class="form-control" placeholder="VAT ID">
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <select id="filterStatus" class="form-control">
+                                            <option value="">All Status</option>
+                                            <option value="true">Active</option>
+                                            <option value="false">Inactive</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button id="btnSearch" class="btn btn-primary me-2"><i class="fas fa-search"></i> Search</button>
+                                        <button id="btnClear" class="btn btn-secondary"><i class="fas fa-window-close me-1"></i> Clear</button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Add Button -->
+                        <div class="text-end mb-3">
+                            <button class="btn btn-success" id="btnAdd">
+                                <i class="fa fa-plus"></i> Add Customer
+                            </button>
+                        </div>
+
+                        <!-- Datatable -->
+                        <table id="datatable" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Id</th>
+                                    <th>Company</th>
+                                    <th>Customer Name</th>
+                                    <th>Email</th>
+                                    <th>VAT ID</th>
+                                    <th>Country</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                        </table>
+
+                        <div id="tableLoader" style="text-align:center;padding:40px;display:none;">
+                            <div class="spinner-border text-primary"></div>
+                            <div class="mt-2">Loading...</div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="customerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Add / Edit Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="customerForm">
+
+                    <input type="hidden" id="Id" name="Id">
+
+                    <div class="row">
+
+
+                        <!-- Language -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Language</label>
+                            <div class="input-group">
+                                <select class="form-control select-my" id="Language" name="Language">
+                                    <option value="">Select Language</option>
+                                    <option value="en">English</option>
+                                    <option value="ar">Arabic</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Company -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Company</label>
+                            <div class="input-group">
+                                <select class="form-control select-my" id="CompanyId" name="CompanyId">
+                                    <option value="">Select Company</option>
+                                </select>
+                                <button type="button" id="btnOpenCompanyModal"
+                                        class="btn btn-primary">
+                                    Create +
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Customer Name -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Customer Name</label>
+                            <input type="text" class="form-control" id="CustomerName" name="CustomerName" required>
+                        </div>
+
+                        <!-- Mailing Name -->
+                        <div class="col-md-6 mb-3 english-field">
+                            <label class="form-label">Mailing Name</label>
+                            <input type="text" class="form-control" id="MailingName" name="MailingName" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3 arabic-field">
+                            <label class="form-label">Mailing Name (Arabic)</label>
+                            <input type="text" class="form-control" id="MailingNameAr" name="MailingNameAr" dir="rtl">
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="Email" name="Email" required>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="col-md-12 mb-3 english-field">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control textarea-my" id="Address" name="Address" rows="2"></textarea>
+                        </div>
+                         
+                        <div class="col-md-12 mb-3 arabic-field">
+                            <label class="form-label">Address (Arabic)</label>
+                            <textarea class="form-control textarea-my" id="Address" name="AddressAr" rows="2" dir="rtl"></textarea>
+                        </div>
+
+                        <!-- VAT ID -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">VAT ID</label>
+                            <input type="text" class="form-control" id="VatId" name="VatId" required>
+                        </div>
+
+                        <!-- VAT Deduction -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">VAT Deduction</label>
+                            <select class="form-control select-my" id="VatDeduction" name="VatDeduction">
+                                <option value="">Select</option>
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+
+                        <!-- VAT Rate -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">VAT Rate</label>
+                            <input type="number" class="form-control" id="VatRate" name="VatRate" required>
+                        </div>
+
+                        <!-- Region -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Region</label>
+                            <select class="form-control select-my" id="RegionId" name="RegionId">
+                                <option value="">Select Region</option>
+                            </select>
+                        </div>
+
+                        <!-- Country -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Country</label>
+                            <select class="form-control select-my" id="CountryId" name="CountryId">
+                                <option value="">Select Country</option>
+                            </select>
+                        </div>
+
+                        <!-- PO Box -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">PO Box</label>
+                            <input type="text" class="form-control" id="POBox" name="POBox">
+                        </div>
+
+                        <!-- Local Language Mailing -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Mailing Local Language</label>
+                            <select class="form-control select-my" id="LocalLanguageMailing" name="LocalLanguageMailing">
+                                <option value="">Select</option>
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-control select-my" id="IsActive" name="IsActive">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <hr>
+
+                    <h5>Bank Details</h5>
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Bank Name</label>
+                            <input type="text" class="form-control" id="BankName" name="BankName">
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Account Number</label>
+                            <input type="text" class="form-control" id="AccountNumber" name="AccountNumber">
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">IBAN</label>
+                            <input type="text" class="form-control" id="IBAN" name="IBAN">
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">SWIFT Code</label>
+                            <input type="text" class="form-control" id="SwiftCode" name="SwiftCode">
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="btnSubmit" class="btn btn-primary">Submit</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Company Modal -->
+<div class="modal fade" id="companyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Create Company</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="companyForm">
+
+                    <input type="hidden" id="CompanyId" name="CompanyId" />
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Company Name <span class="required-label">*</span>
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               id="CompanyName"
+                               name="CompanyName"
+                               placeholder="Enter Company Name"
+                               required>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+
+                <button type="button"
+                        id="btnSaveCompany"
+                        class="btn btn-primary">
+                    Save Company
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@section Script {
+
+    <!-- Required datatable js -->
+    <script src="~/assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="~/assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            $(".arabic-field").hide();
+
+            $("#Language").change(function () {
+
+                let lang = $(this).val();
+
+                if (lang === "ar") {
+                    $(".english-field").hide();
+                    $(".arabic-field").show();
+                }
+                else {
+                    $(".english-field").show();
+                    $(".arabic-field").hide();
+                }
+
+            });
+
+            $("#btnOpenCompanyModal").click(function(){
+
+                $("#companyModal").modal({
+                    backdrop: 'static',
+                    keyboard: false
+                });
+
+                $("#companyModal").modal("show");
+
+            });
+
+            $('#btnSaveCompany').on('click', function () {
+
+                let portName = $('#CompanyName').val().trim();
+
+                if (portName !== '') {
+
+                    // Add to correct dropdown
+                    $('#CompanyId').append(
+                        $('<option>', {
+                            value: portName,
+                            text: portName,
+                            selected: true
+                        })
+                    );
+
+                    $('#CompanyName').val('');
+                    $('#companyModal').modal('hide');
+
+                } else {
+                    alert('Please enter port name.');
+                }
+
+            });
+
+            var myModal = new bootstrap.Modal(document.getElementById('customerModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            $('#btnAdd').on('click', function () {
+                $("#customerForm")[0].reset();
+                $("#customerForm [required]").removeClass("is-invalid");
+                $("#Id").val("");
+                //$("#CostCenterPhotoPreview").attr("src", "").hide();
+                myModal.show();
+            });
+
+
+            $("#btnSubmit").on("click", function () {
+                //alert('aa')
+                if (!validateForm()) return;
+
+                var formData = new FormData($("#customerForm")[0]);
+                var $btn = $(this);
+
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, value);
+                }
+
+                return;
+            });
+
+        });
+
+        function validateForm() {
+            let valid = true;
+
+            $("#customerForm [required]").each(function () {
+                if (!$(this).val()) {
+                    $(this).addClass("is-invalid");
+                    valid = false;
+                } else {
+                    $(this).removeClass("is-invalid");
+                }
+            });
+
+            return valid;
+        }
+
+    </script>
+
+}

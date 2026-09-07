@@ -1,0 +1,585 @@
+﻿@{
+    ViewData["Title"] = "Sales Report";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Head {
+
+    <!-- DataTables -->
+    <link href="~/assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/libs/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+    <link href="~/assets/libs/select2/css/select2.min.css" rel="stylesheet" type="text/css">
+    
+}
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- Page Title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Sales Report</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+
+                        <!-- Filter Button -->
+                        <div class="mb-3">
+                            <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection">
+                                <i class="fa fa-filter"></i> Filter
+                            </button>
+                        </div>
+
+                        <!-- Filter Section -->
+                        <div class="collapse" id="filterSection">
+                            <div class="card mb-3 p-3">
+
+                                <div class="row mb-3">
+
+                                    <div class="col-md-3">
+                                        <select id="filterCostCenter" class="form-control select-my">
+                                            <option value="" selected disabled>Select Cost Centers</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- 📅 From Date -->
+                                    <div class="col-md-3">
+                                        <input type="date" id="filterFromDate" name="filterFromDate" class="form-control" placeholder="From Date">
+                                    </div>
+
+                                    <!-- 📅 To Date -->
+                                    <div class="col-md-3">
+                                        <input type="date" id="filterToDate" name="filterToDate" class="form-control" placeholder="To Date">
+                                    </div>
+
+                                    <!-- 🔎 B/L Number -->
+                                    <div class="col-md-3">
+                                        <input type="text" id="filterBLNumber" class="form-control" placeholder="B/L or Booking Number">
+                                    </div>
+
+                                </div>
+
+
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <select id="filterStatus" class="form-control select-my">
+                                            <option value="" selected>All Status</option>
+                                            <option value="1">Paid</option>
+                                            <option value="0">UnPaid</option>
+                                            <option value="2">Partial</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button id="btnSearch" class="btn btn-primary me-2 w-50">Search</button>
+                                        <button id="btnClear" class="btn btn-secondary w-50">Clear</button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+                        <!-- Datatable -->
+                        <div style="width: 100%; overflow-x: auto;">
+                            <table id="datatable" class="table table-striped table-bordered nowrap align-middle" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>Cost Center</th>
+                                        <th>Date</th>
+                                        <th>Job Number</th>
+                                        <th>Mode Of Shipment</th>
+                                        <th>Type of Shipment</th>
+                                        <th>Customer Name</th>
+                                        <th>B/L Number</th>
+                                        <th>Our Invoice Date</th>
+                                        <th>Our Invoice Number</th>
+                                        <th>Total Invoice Amount</th>
+                                        <th>Total Cost</th>
+                                        <th>VAT</th>
+                                        <th>Commission</th>
+                                        <th>Profit</th>
+                                        <th>Loss</th>
+                                        <th>Payment Received RV Number</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+
+                                <tfoot>
+                                    <tr class="fw-bold text-nowrap">
+                                        <th></th> <!-- Cost Center -->
+                                        <th></th> <!-- Date -->
+                                        <th></th> <!-- Job Number -->
+                                        <th></th> <!-- Mode Of Shipment -->
+                                        <th></th> <!-- Type of Shipment -->
+                                        <th></th> <!-- Customer Name -->
+                                        <th></th> <!-- B/L Number -->
+                                        <th></th> <!-- Invoice Date -->
+
+                                        <th class="text-end">Grand Total</th> <!-- Invoice Number -->
+
+                                        <th class="text-end"></th> <!-- Invoice Amount -->
+                                        <th class="text-end"></th> <!-- Total Cost -->
+                                        <th class="text-end"></th> <!-- VAT -->
+                                        <th class="text-end"></th> <!-- Commission -->
+                                        <th class="text-end"></th> <!-- Profit -->
+                                        <th class="text-end"></th> <!-- Loss -->
+
+                                        <th></th> <!-- Payment RV -->
+                                        <th></th> <!-- Status -->
+                                    </tr>
+                                </tfoot>
+
+                            </table>
+                        </div>
+
+
+                        <div id="tableLoader" style="text-align:center;padding:40px;display:none;">
+                            <div class="spinner-border text-primary"></div>
+                            <div class="mt-2">Loading...</div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+@section Script {
+
+    <!-- Required datatable js -->
+    <script src="~/assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="~/assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="~/assets/libs/select2/js/select2.min.js"></script>
+
+    <script>
+
+        let reportCompanyName = "Company";
+
+        $(document).ready(function () {
+
+            loadCostCenter();
+            clearForm();
+
+            // Search & Clear
+            $("#btnSearch").click(function () {
+                loadRecords(true);
+            });
+
+            $("#btnClear").click(function () {
+                clearForm();
+                loadRecords(true);
+            });
+
+            loadCompanyNames().always(function () {
+                loadRecords(true);
+            });
+
+        });
+
+        function loadRecords(isFilterApplied = false) {
+
+            // destroy if already exists
+            if ($.fn.DataTable.isDataTable('#datatable')) {
+                $('#datatable').DataTable().destroy();
+                $('#datatable tbody').empty();
+            }
+
+            $("#datatable").DataTable({
+
+                processing: true,
+                serverSide: true,
+                paging: true,
+                lengthChange: true,
+                scrollX: false,
+                autoWidth: false,
+                responsive: false,
+                pageLength: 100,
+                order: [[0, "desc"]],
+                searching: false,
+                dom: 'Bfrtip',
+
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: '📥 Export Excel',
+
+                        title: function () {
+                            const costCenterName = $("#filterCostCenter option:selected").text().trim() || "All";
+                            return `Cost Center: ${costCenterName} (${reportCompanyName})`;
+                        },
+
+                        footer: true,
+
+                        exportOptions: {
+                            columns: ':visible'
+                        },
+
+                        customize: function (xlsx) {
+                            const sheet = xlsx.xl.worksheets['sheet1.xml'];
+                            const styles = xlsx.xl['styles.xml'];
+
+                            const fonts = $('fonts', styles);
+                            const cellXfs = $('cellXfs', styles);
+
+                            const fontId = $('font', fonts).length;
+
+                            fonts.append(
+                                '<font>' +
+                                    '<b/>' +
+                                    '<sz val="16"/>' +
+                                    '<name val="Calibri"/>' +
+                                    '<family val="2"/>' +
+                                '</font>'
+                            );
+
+                            fonts.attr('count', fontId + 1);
+
+                            // New centered cell style
+                            const styleId = $('xf', cellXfs).length;
+
+                            cellXfs.append(
+                                '<xf numFmtId="0" ' +
+                                    'fontId="' + fontId + '" ' +
+                                    'fillId="0" ' +
+                                    'borderId="0" ' +
+                                    'xfId="0" ' +
+                                    'applyFont="1" ' +
+                                    'applyAlignment="1">' +
+                                    '<alignment horizontal="center" vertical="center"/>' +
+                                '</xf>'
+                            );
+
+                            cellXfs.attr('count', styleId + 1);
+
+                            // Apply style to the first row, which contains the title
+                            $('row:first c', sheet).attr('s', styleId);
+
+                            // Increase title row height
+                            $('row:first', sheet)
+                                .attr('ht', '26')
+                                .attr('customHeight', '1');
+                        }
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '📄 PDF',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        footer: true,
+                        title: '',
+                        exportOptions: {
+                            //columns: ':visible:not(:last-child)'
+                            columns: ':visible'
+                        },
+
+                        customize: function (doc) {
+
+                            doc.pageOrientation = 'landscape';
+                            doc.pageSize = 'A4';
+
+                            // Dynamic Cost Center Name Extract karna
+                            var costCenterName = $("#filterCostCenter option:selected").text().trim() || "All";
+                            const fromDate = $("#filterFromDate").val() || "All";
+                            const toDate = $("#filterToDate").val() || "All";
+
+                            //var headerText = `Cost Center Report - ${costCenterName} (${reportCompanyName})`;
+                            const formattedFromDate = formatReportDate(fromDate);
+                            const formattedToDate = formatReportDate(toDate);
+
+                            // Document ke start (top) par Center Aligned Header add karna
+                            doc.content.splice(0, 0, {
+                                text: [
+                                    {
+                                        text: `Sales Report - ${costCenterName} (${reportCompanyName})`,
+                                        fontSize: 14,
+                                        bold: true
+                                    },
+                                    {
+                                        text: `\nFrom Date: ${formattedFromDate} To Date: ${formattedToDate}`,
+                                        fontSize: 14,
+                                        bold: true
+                                    }
+                                ],
+                                fontSize: 16,
+                                bold: true,
+                                alignment: 'center',
+                                margin: [0, 0, 0, 12]
+                            });
+
+                            doc.defaultStyle = {
+                                fontSize: 6
+                            };
+
+                            doc.pageMargins = [5, 10, 5, 10];
+
+                            var tableBody = doc.content[1].table.body;
+
+                            doc.content[1].table.widths =
+                                Array(tableBody[0].length).fill('auto');
+
+                            doc.styles.tableHeader = {
+                                fontSize: 7,
+                                bold: true,
+                                alignment: 'left'
+                            };
+
+                            doc.content[1].layout = {
+                                hLineWidth: function () { return 0.5; },
+                                vLineWidth: function () { return 0.5; },
+                                hLineColor: function () { return '#ccc'; },
+                                vLineColor: function () { return '#ccc'; },
+                                paddingLeft: function () { return 2; },
+                                paddingRight: function () { return 2; },
+                                paddingTop: function () { return 1; },
+                                paddingBottom: function () { return 1; }
+                            };
+                        }
+                    }
+                ],
+
+                // 🔥 page load per empty table
+                deferLoading: isFilterApplied ? null : 0,
+
+                footerCallback: function (row, data, start, end, display) {
+
+                    var api = this.api();
+
+                    function parseValue(value) {
+                        if (typeof value === 'string') {
+                            return parseFloat(value.replace(/,/g, '')) || 0;
+                        }
+
+                        return typeof value === 'number' ? value : 0;
+                    }
+
+                    function total(columnIndex) {
+                        return api
+                            .column(columnIndex, { page: 'current' })
+                            .data()
+                            .reduce(function (a, b) {
+                                return parseValue(a) + parseValue(b);
+                            }, 0);
+                    }
+
+                    $(api.column(9).footer()).html(formatAmount(total(9)));
+                    $(api.column(10).footer()).html(formatAmount(total(10)));
+                    $(api.column(11).footer()).html(formatAmount(total(11)));
+                    $(api.column(12).footer()).html(formatAmount(total(12)));
+                    $(api.column(13).footer()).html(formatAmount(total(13)));
+                    $(api.column(14).footer()).html(formatAmount(total(14)));
+                },
+
+                ajax: {
+                    url: "/Report/GetSalesReport",
+                    type: "POST",
+                    data: function (d) {
+
+                        d.costCenterId = $("#filterCostCenter").val();
+                        d.fromDate = $("#filterFromDate").val();
+                        d.toDate = $("#filterToDate").val();
+                        d.status = $("#filterStatus").val();
+
+                        d.orderColumn = d.columns[d.order[0].column].data;
+                        d.orderDir = d.order[0].dir;
+                    }
+                },
+
+                columns: [
+
+                    { data: "CostCenter", defaultContent: "" },
+
+                    {
+                        data: "JobDate",
+                        defaultContent: "",
+                        render: function (data) {
+                            return data ? formatDate(data) : "";
+                        }
+                    },
+
+                    { data: "JobNo", defaultContent: "" },
+
+                    { data: "ModeOfShipment", defaultContent: "" },
+
+                    { data: "ShipmentTypeName", defaultContent: "" },
+
+                    { data: "CustomerName", defaultContent: "" },
+
+                    { data: "BLNumber", defaultContent: "" },
+
+                    {
+                        data: "InvoiceDate",
+                        defaultContent: "",
+                        render: function (data) {
+                            return data ? formatDate(data) : "";
+                        }
+                    },
+
+                    { data: "InvoiceNo", defaultContent: "" },
+
+                    {
+                        data: "InvoiceAmount",
+                        className: "text-end",
+                        defaultContent: "",
+                        render: function (data) {
+                            return data ? formatAmount(data) : "";
+                        }
+                    },
+
+                    {
+                        data: "TotalCost",
+                        className: "text-end",
+                        defaultContent: "",
+                        render: function (data) {
+                            return data ? formatAmount(data) : "";
+                        }
+                    },
+
+                    {
+                        data: "VATAmount",
+                        className: "text-end",
+                        defaultContent: "",
+                        render: function (data) {
+                            return data ? formatAmount(data) : "";
+                        }
+                    },
+
+                    {
+                        data: "Commission",
+                        className: "text-end",
+                        defaultContent: "",
+                        render: function (data) {
+                            return data ? formatAmount(data) : "";
+                        }
+                    },
+
+                    {
+                        data: "Profit",
+                        className: "text-end",
+                        defaultContent: "",
+                        render: function (data) {
+                            return data || "";
+                        }
+                    },
+
+                    {
+                        data: "LossAmount",
+                        className: "text-end",
+                        defaultContent: "",
+                        render: function (data) {
+                            return data ? formatAmount(data) : "";
+                        }
+                    },
+
+
+                    { data: "Remarks", defaultContent: "" },
+
+                    { data: "Status", defaultContent: "" }
+                ]
+            });
+        }
+
+
+        function loadCostCenter(selectedId = null) {
+            $.ajax({
+                url: '/Dropdown/GetCostCenter',
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+
+                    let $dropdown = $('#filterCostCenter');
+
+                    $dropdown.empty();
+                    $dropdown.append('<option value="" selected>Select All</option>');
+
+                    $.each(response.data, function (i, item) {
+                        $dropdown.append(
+                            `<option value="${item.Id}">
+                                        ${item.CostCenterName} (${item.CostCenterCode})
+                                    </option>`
+                        );
+                    });
+
+                    // Destroy previous Select2 (important for reload cases)
+                    if ($dropdown.hasClass("select2-hidden-accessible")) {
+                        $dropdown.select2('destroy');
+                    }
+
+                    // Initialize Select2
+                    $dropdown.select2({
+                        placeholder: "Select Cost Center",
+                        allowClear: true,
+                        width: '100%'
+                    });
+
+                    // Set selected value
+                    if (selectedId) {
+                        $dropdown.val(selectedId).trigger('change');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error loading cost centers:", error);
+                }
+            });
+        }
+
+        function loadCompanyNames() {
+            return $.ajax({
+                url: "/Report/GetCompanyNames",
+                type: "GET",
+                dataType: "json",
+                success: function (response) {
+                    if (response.errorCode === 200) {
+                        const companyName = response.companyName || "";
+                        const companyNameAr = response.companyNameAr || "";
+
+                        if (companyName && companyNameAr) {
+                            reportCompanyName =
+                                `${companyName} (${companyNameAr})`;
+                        } else {
+                            reportCompanyName =
+                                companyName || companyNameAr || "Company";
+                        }
+                    }
+                },
+                error: function () {
+                    reportCompanyName = "Company";
+                }
+            });
+        }
+
+        function clearForm(){
+            $("#filterSection").find("input").val("");
+            $("#filterSection").find("select").val("");
+
+            var today = new Date();
+            var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            var lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+            $('#filterFromDate').val(formatDateFilter(firstDay));
+            $('#filterToDate').val(formatDateFilter(lastDay));
+        }
+    </script>
+
+}

@@ -1,0 +1,182 @@
+﻿@{
+    Layout = null;
+}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+    <title>Login | C & F Management System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="C & F Management System" name="description" />
+    <meta content="Themesdesign" name="author" />
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="~/assets/images/favicon.ico">
+
+    <!-- Bootstrap Css -->
+    <link href="~/assets/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
+    <!-- Icons Css -->
+    <link href="~/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <!-- App Css-->
+    <link href="~/assets/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
+    <!-- Toastr Css-->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" asp-append-version="true" />
+</head>
+
+<body class="auth-body-bg">
+    <div class="bg-overlay"></div>
+    <div class="wrapper-page">
+        <div class="container-fluid p-0">
+            <div class="card">
+                <div class="card-body">
+
+                    <div class="text-center" style="margin-bottom: -45px;">
+                        <div class="mb-3">
+                            <a href="#" class="auth-logo">
+                                <img src="~/assets/images/logo-dark.png" height="200" class="logo-dark mx-auto" alt="">
+                                <img src="~/assets/images/logo-dark.png" height="30" class="logo-light mx-auto" alt="">
+                            </a>
+                        </div>
+                    </div>
+
+                    <h4 class="text-muted text-center font-size-18"><b>Sign In</b></h4>
+
+                    <div class="p-3">
+                        <form class="form-horizontal mt-3" action="#" id="login-form">
+
+                            <div class="form-group mb-3 row">
+                                <div class="col-12">
+                                    <input class="form-control" type="text" placeholder="Username" id="username" value="admin">
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-3 row">
+                                <div class="col-12">
+                                    <input class="form-control" type="password" placeholder="Password" id="password" value="admin@786">
+                                </div>
+                            </div>
+
+                          
+
+                            <div class="form-group mb-3 text-center row mt-3 pt-1">
+                                <div class="col-12">
+                                    <button class="btn btn-info w-100 waves-effect waves-light" id="btnlogin">Log In</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-0 row mt-2">
+                                <div class="col-sm-7 mt-3">
+                                    <a href="#" class="text-muted"><i class="mdi mdi-lock"></i> Forgot your password?</a>
+                                </div>
+                                <div class="col-sm-5 mt-3" style="display:none;">
+                                    <a href="#" class="text-muted"><i class="mdi mdi-account-circle"></i> Create an account</a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- end -->
+                </div>
+                <!-- end cardbody -->
+            </div>
+            <!-- end card -->
+        </div>
+        <!-- end container -->
+    </div>
+    <!-- end -->
+    <!-- JAVASCRIPT -->
+    <script src="~/assets/libs/jquery/jquery.min.js"></script>
+    <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/libs/metismenu/metisMenu.min.js"></script>
+    <script src="~/assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="~/assets/libs/node-waves/waves.min.js"></script>
+
+    <script src="~/assets/js/app.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js" asp-append-version="true"></script>
+
+    <script>
+        $().ready(function () {
+            $("#username").focus();
+        });
+
+        $("#login-form").on('submit', function (e) {
+            e.preventDefault();
+
+            var $btn = $("#btnlogin");
+            $btn.prop("disabled", true).text("Please Wait...");
+
+            var email = $('#username').val().trim();
+            var password = $('#password').val().trim();
+            // alert(email);
+
+            //showMessage("Login successfully!", "success");
+            //return false;
+
+            if (!email || !password) {
+                showMessage("Please Fill Mandatory Fields", "error");
+                resetButton($btn);
+                return;
+            }
+
+            var userData = {
+                userid: email,
+                password: password
+            };
+
+            $.ajax({
+                url: '/Account/SubmitLogin',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(userData),
+                success: function (data) {
+                    console.log("data", data);
+                    if (data.errorCode == 200) {
+                        showMessage("Login successfully!", "success");
+
+                        if(data.data == 1){
+                            setTimeout(function () {
+                                //window.location = '/Dashboard/Index';
+                                window.location = '/Account/Users';
+                            }, 500);
+                        } else {
+                            setTimeout(function () {
+                                //window.location = '/Dashboard/Index';
+                                window.location = '/Account/CostCenter';
+                            }, 500);
+                        }
+
+                    } else {
+                        showMessage(data.errorMessage, "error");
+                        resetButton($('#btnlogin'));
+                    }
+                },
+                error: function (error) {
+                    showMessage("An error occurred", "error");
+                    resetButton($('#btnlogin'));
+                }
+            });
+        });
+
+        function showMessage(Message, type) {
+            toastr.options = {
+                positionClass: 'toast-top-right',
+                toastClass: 'custom-toastr',
+                closeMethod: 'fadeout',
+                timeOut: 2000
+            };
+            if (type == "info")
+                toastr.info(Message);
+            else if (type == "success")
+                toastr.success(Message);
+            else if (type == "error")
+                toastr.error(Message);
+        }
+
+        function resetButton($btn) {
+            $btn.prop("disabled", false).text("Login");
+        }
+
+    </script>
+</body>
+</html>

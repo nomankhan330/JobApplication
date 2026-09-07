@@ -1,0 +1,1103 @@
+﻿@{
+    ViewData["Title"] = "Purchase Invoice";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Head {
+    <!-- DataTables -->
+    <link href="~/assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/libs/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/libs/select2/css/select2.min.css" rel="stylesheet" type="text/css">
+    
+}
+
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- start page title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Purchase Invoice</h4>
+                </div>
+            </div>
+        </div>
+        <!-- end page title -->
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+
+                        <!-- Filter Button -->
+                        <div class="mb-3">
+                            <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection">
+                                <i class="fa fa-filter"></i> Filter Purchase Invoice
+                            </button>
+                        </div>
+
+                        <!-- Filter Section -->
+                        <div class="collapse" id="filterSection">
+                            <div class="card mb-3 p-3">
+
+                                <div class="row mb-3">
+
+                                    <div class="col-md-3">
+                                        <select id="filterServiceProvider" name="filterServiceProvider" class="form-control select-my">
+                                            <option value="">All Service Providers</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- 📅 From Date -->
+                                    <div class="col-md-3">
+                                        <input type="date" id="filterFromDate" name="filterFromDate" class="form-control" placeholder="From Date">
+                                    </div>
+
+                                    <!-- 📅 To Date -->
+                                    <div class="col-md-3">
+                                        <input type="date" id="filterToDate" name="filterToDate" class="form-control" placeholder="To Date">
+                                    </div>
+
+                                    <!-- 🔎 Invoice Number -->
+                                    <div class="col-md-3">
+                                        <input type="text" id="filterInvoiceNo" class="form-control" placeholder="Invoice Number">
+                                    </div>
+
+                                </div>
+
+
+                                <div class="row mb-3">
+                                    <!-- 🔎 Job Number -->
+                                    <div class="col-md-3">
+                                        <select id="filterJobNo" class="form-select" style="width:100%">
+                                        </select>
+                                    </div>
+                                </div>
+
+
+                                <div class="row mb-3" style="display:none;">
+
+                                    <div class="col-md-12 text-end">
+
+                                        <button id="btnExportExcel" class="btn btn-success">
+                                            Export Excel (.xlsx)
+                                        </button>
+
+                                        <button id="btnExportPdf" class="btn btn-danger">
+                                            Export PDF
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button id="btnSearch" class="btn btn-primary me-2"><i class="fas fa-search"></i> Search</button>
+                                        <button id="btnClear" class="btn btn-secondary"><i class="fas fa-window-close me-1"></i> Clear</button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+                        <!-- Add Import Job Button -->
+                        <div class="text-end mb-3">
+                            <a class="btn btn-success" id="btnAdd" href="/Invoice/CreatePurchaseInvoice">
+                                <i class="fa fa-plus"></i> Create Purchase Invoice
+                            </a>
+                        </div>
+
+                        <!-- Table Job Import -->
+                        <div style="width: 100%; overflow-x: auto;">
+                            <table id="datatable" class="table table-striped table-bordered nowrap align-middle" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+
+                                    <th>Invoice No</th>
+
+                                    <th>Job No</th>
+
+                                    <th>Invoice Type</th>
+
+                                    <th>Service Provider</th>
+
+                                    <th>Invoice Date</th>
+
+                                    <th>Net Amount</th>
+
+                                    <th>VAT</th>
+
+                                    <th>Grand Total</th>
+
+                                    <th>Balance Amount</th>
+
+                                    <th>Status</th>
+
+                                    <th>Created By</th>
+
+                                    <th width="120">Action</th>
+                                </tr>
+                            </thead>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<div class="modal fade" id="purchaseVoucherModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title">
+                    Purchase Voucher (PV)
+                </h5>
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="purchaseVoucherForm">
+
+                    <input type="hidden" id="Id" name="Id" />
+                    <input type="hidden" id="InvoiceId" name="InvoiceId" />
+                    <input type="hidden" id="BlNo" name="BlNo" />
+
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-md-4 col-form-label">
+                            Supplier Name <span class="text-danger">*</span>
+                        </label>
+                        <div class="col-md-8">
+                            <input type="text"
+                                   class="form-control"
+                                   id="ServiceProviderName"
+                                   name="ServiceProviderName"
+                                   readonly />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-md-4 col-form-label">
+                            Job Number <span class="text-danger">*</span>
+                        </label>
+                        <div class="col-md-8">
+                            <input type="text"
+                                   class="form-control"
+                                   id="JobNumber"
+                                   name="JobNumber"
+                                   readonly />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-md-4 col-form-label">
+                            Purchase Invoice Number <span class="text-danger">*</span>
+                        </label>
+                        <div class="col-md-8">
+                            <input type="text"
+                                   class="form-control"
+                                   id="InvoiceNumber"
+                                   name="InvoiceNumber"
+                                   readonly />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-md-4 col-form-label">
+                            PV Number <span class="text-danger">*</span>
+                        </label>
+                        <div class="col-md-8">
+                            <input type="text"
+                                   class="form-control"
+                                   id="Pvnumber"
+                                   name="Pvnumber"
+                                   placeholder="Enter PV Number"
+                                   required />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-md-4 col-form-label">
+                            Date <span class="text-danger">*</span>
+                        </label>
+                        <div class="col-md-8">
+                            <input type="date"
+                                   class="form-control"
+                                   id="PaymentDate"
+                                   name="PaymentDate"
+                                   required />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-md-4 col-form-label">
+                            Payment Method <span class="text-danger">*</span>
+                        </label>
+                        <div class="col-md-8">
+                            <select class="form-control select-my"
+                                    id="PaymentMode"
+                                    name="PaymentMode"
+                                    required>
+                                <option value="">Select Payment Mode</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Online Transfer">Online Transfer</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-md-4 col-form-label">
+                            Amount <span class="text-danger">*</span>
+                        </label>
+                        <div class="col-md-8">
+                            <input type="number"
+                                   class="form-control"
+                                   id="Amount"
+                                   name="Amount"
+                                   placeholder="Enter Amount"
+                                   required />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-md-4 col-form-label">
+                            Description
+                        </label>
+                        <div class="col-md-8">
+                            <textarea class="form-control textarea-my"
+                                      id="Description"
+                                      name="Description"
+                                      placeholder="Enter Description"
+                                      rows="3"></textarea>
+                        </div>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer justify-content-center">
+                <button type="button"
+                        class="btn btn-primary px-5"
+                        id="btnSavePayment">
+                    Submit
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@section Script {
+
+    <!-- Required datatable js -->
+    <script src="~/assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="~/assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="~/assets/libs/select2/js/select2.min.js"></script>
+
+    <script>
+
+        var loginType = '@ViewBag.LoginType';
+
+        $(document).ready(function () {
+
+            //alert(loginType);
+
+            loadCustomer();
+            loadJobNo();
+            clearForm();
+
+             // Search & Clear
+            $("#btnSearch").click(function () {
+                loadRecords();
+            });
+
+            $("#btnClear").click(function () {
+                clearForm();
+                loadRecords();
+            });
+
+            loadRecords();
+
+            $(document).on("click", ".btnPurchaseVoucher", function () {
+
+                $("#purchaseVoucherForm")[0].reset();
+                $("#purchaseVoucherForm [required]").removeClass("is-invalid");
+
+                $("#Id").val(0);
+                $("#InvoiceId").val($(this).data("invoiceid"));
+                $("#BlNo").val($(this).data("blno"));
+                $("#ServiceProviderName").val($(this).data("spname"));
+                $("#InvoiceNumber").val($(this).data("invoiceno"));
+                $("#JobNumber").val($(this).data("jobno"));
+
+                const modal = new bootstrap.Modal(
+                    document.getElementById('purchaseVoucherModal')
+                );
+
+                modal.show();
+            });
+
+            $('#btnSavePayment').on('click', function () {
+
+                if (!validateForm()) return;
+
+                let formData = new FormData($("#purchaseVoucherForm")[0]);
+
+                let $btn = $(this);
+
+                $.ajax({
+                        url: "/Invoice/SavePurchaseVoucher",
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+
+                    beforeSend: function () {
+                        $btn.prop("disabled", true).text("Processing...");
+                    },
+
+                    success: function (data) {
+
+                        if (data.errorCode == 200) {
+
+                            showMessage("Payment saved successfully!", "success");
+
+                            // 1. Form reset
+                            $("#purchaseVoucherForm")[0].reset();
+
+                            // 2. Clear hidden fields (important)
+                            $("#InvoiceId").val("");
+                            $("#Id").val("");
+
+                            // 3. Optional: reset dropdown manually if needed
+                            $("#PaymentMode").val("");
+
+                            // 4. Close modal (Bootstrap 5 safe way)
+                            const modalEl = document.getElementById('purchaseVoucherModal');
+                            const modal = bootstrap.Modal.getInstance(modalEl);
+                            modal.hide();
+
+                            // 5. Refresh grid
+                            loadRecords();
+                        }
+                        else {
+                            showMessage(data.data, "error");
+                        }
+                    },
+
+                    error: function () {
+                        showMessage("An error occurred", "error");
+                    },
+
+                    complete: function () {
+                        $btn.prop("disabled", false).text("Submit");
+                    }
+                });
+
+
+            });
+
+            $(document).on("click", ".btnCancelInvoice", function () {
+
+                let invoiceId = $(this).data("invoiceid");
+
+                $.ajax({
+                    url: "/Invoice/GetNextCreditNoteNumberPurchase",
+                    type: "GET",
+                    success: function (response) {
+
+                        //alert(response);
+
+                        // if (!response.success) {
+                        //     toastr.error(response.message);
+                        //     return;
+                        // }
+
+                        Swal.fire({
+                            title: "Cancel Invoice?",
+                            html:
+                                `<div class="text-start">
+                                    <p>
+                                        Are you sure you want to cancel this invoice?
+                                    </p>
+
+                                    <div class="alert alert-warning">
+                                        <strong>Credit Note Number</strong><br/>
+                                        <span class="fs-5">${response}</span>
+                                    </div>
+
+                                    <small>
+                                        A Credit Note will be created automatically after confirmation.
+                                    </small>
+                                </div>`,
+                            icon: "warning",
+                            showCancelButton: true,
+                            confirmButtonText: "Confirm",
+                            cancelButtonText: "Close",
+                            confirmButtonColor: "#dc3545"
+                        }).then((result) => {
+
+                            if (result.isConfirmed) {
+
+                                CancelInvoice(invoiceId);
+
+                            }
+
+                        });
+
+                    }
+                });
+
+            });
+
+            $(document).on("click", ".btnViewCreditNote", function () {
+
+                var invoiceId = $(this).data("invoiceid");
+
+                $.ajax({
+                    url: "/Invoice/GetCreditNoteSummaryPurchase",
+                    type: "GET",
+                    data: {
+                        invoiceId: invoiceId
+                    },
+                    success: function (response) {
+
+                        if (response.errorCode == 200) {
+
+                            var c = response.data;
+
+                            Swal.fire({
+                                title: "Credit Note Details",
+                                width: 700,
+                                html: `
+                                    <table class="table table-bordered table-sm text-start mb-0">
+                                        <tr>
+                                            <th width="40%">Credit Note No</th>
+                                            <td>${c.CreditNoteNo}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Invoice No</th>
+                                            <td>${c.InvoiceNo}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Service Provider</th>
+                                            <td>${c.ServiceProviderName}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Credit Note Date</th>
+                                            <td>${formatDate(c.CreditNoteDate)}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Amount</th>
+                                            <td>${parseFloat(c.GrandTotal).toLocaleString()}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Cancelled By</th>
+                                            <td>${c.CancelledByUser}</td>
+                                        </tr>
+                                        <tr style='display:none;'>
+                                            <th>Reason</th>
+                                            <td>${c.Remarks ?? ""}</td>
+                                        </tr>
+                                    </table>`,
+                                showCancelButton: true,
+                                // confirmButtonText: "View Credit Note",
+                                // cancelButtonText: "Close"
+                            })
+
+                            // .then((result) => {
+
+                            //     if (result.isConfirmed) {
+
+                            //         window.location.href =
+                            //             "/Invoice/SaleCreditNoteView/" + c.CreditNoteId;
+
+                            //     }
+
+                            // });
+
+                        }
+                        else {
+
+                            Swal.fire(
+                                "Error",
+                                response.data,
+                                "error"
+                            );
+
+                        }
+
+                    }
+                });
+
+            });
+        });
+
+        function loadRecords() {
+
+            if ($.fn.DataTable.isDataTable('#datatable')) {
+                $('#datatable').DataTable().destroy();
+            }
+
+            $("#datatable").DataTable({
+
+                processing: true,
+                serverSide: true,
+                paging: true,
+                lengthChange: true,
+                autoWidth: false,
+                responsive: true,
+                scrollX: false, // CSS overflow-x se handle hoga
+                pageLength: 10,
+                order: [[0, "desc"]],
+                searching: true,
+
+                dom: "<'row mb-2'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                        "<'row'<'col-sm-12'tr>>" +
+                        "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                language: {
+                    paginate: {
+                        previous: "<i class='fas fa-chevron-left'></i>",
+                        next: "<i class='fas fa-chevron-right'></i>"
+                    }
+                },
+                ajax: {
+                    url: "/Invoice/GetPurchaseInvoices",
+                    type: "POST",
+                    data: function (d) {
+
+                        d.serviceProviderId = $("#filterServiceProvider").val();
+                        d.fromDate = $("#filterFromDate").val();
+                        d.toDate = $("#filterToDate").val();
+                        d.invoiceNo = $("#filterInvoiceNo").val();
+                        d.jobNo = $("#filterJobNo").val();
+                    }
+                },
+
+                columns: [
+
+                    {
+                        data: "InvoiceId",
+                        visible: false
+                    },
+                    //{ data: "InvoiceNo" },
+                        {
+                            data: null,
+                            className: "align-middle text-start",
+                            render: function (data, type, row) {
+
+                                const cancelledBadge = row.IsCancelled
+                                        ? `<span class="d-inline-flex align-items-center rounded-pill fw-semibold"
+                                             style="
+                                                background-color: rgba(220, 53, 69, 0.12);
+                                                color: #dc3545;
+                                                border: 1px solid rgba(220, 53, 69, 0.25);
+                                                padding: 0.15rem 0.5rem;
+                                                font-size: 0.68rem;
+                                             ">
+                                            <i class="bi bi-x-circle-fill me-1" style="font-size: 0.7rem;"></i>Cancelled
+                                       </span>`
+                                    : '';
+
+                                return `
+                                    <div class="d-flex flex-column align-items-start justify-content-center">
+                                        <span class="fw-bold text-dark" style="font-size: 0.875rem; letter-spacing: 0.2px;">
+                                            ${row.InvoiceNo}
+                                        </span>
+                                        ${cancelledBadge}
+                                    </div>
+                                `;
+                            }
+                        },
+                    { data: "JobNo" },
+                    {
+                        data: null,
+                        title: "Invoice Type",
+                        className: "text-center align-middle",
+                        render: function (data, type, row) {
+
+                            const isWithVat = row.ServiceProviderId != 0;
+
+                            const config = isWithVat
+                                ? {
+                                    text: "With VAT",
+                                    bg: "rgba(25, 135, 84, 0.12)",
+                                    color: "#198754",
+                                    border: "rgba(25, 135, 84, 0.25)",
+                                    icon: "bi-percent"
+                                  }
+                                : {
+                                    text: "Without VAT",
+                                    bg: "rgba(255, 193, 7, 0.15)",
+                                    color: "#b58100",
+                                    border: "rgba(255, 193, 7, 0.3)",
+                                    icon: "bi-dash-circle"
+                                  };
+
+                            return `
+                                <span class="d-inline-flex align-items-center rounded-pill fw-semibold"
+                                      style="
+                                        background-color: ${config.bg};
+                                        color: ${config.color};
+                                        border: 1px solid ${config.border};
+                                        padding: 0.25rem 0.65rem;
+                                        font-size: 0.725rem;
+                                        letter-spacing: 0.3px;
+                                      ">
+                                    <i class="bi ${config.icon} me-1" style="font-size: 0.75rem;"></i>
+                                    <span>${config.text}</span>
+                                </span>`;
+                        }
+                    },
+                    { data: "ServiceProviderName" },
+                    {
+                        data: "InvoiceDate",
+                        render: function (data) {
+                            return formatDate(data);
+                        }
+                    },
+                    {
+                        data: "NetAmount",
+                        className: "text-end",
+                        render: function (data) {
+                            return data
+                                ? parseFloat(data).toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })
+                                : "0.00";
+                        }
+                    },
+                    {
+                        data: "VatAmount",
+                        className: "text-end",
+                        render: function (data) {
+                            return data
+                                ? parseFloat(data).toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })
+                                : "0.00";
+                        }
+                    },
+                    {
+                        data: "GrandTotal",
+                        className: "text-end",
+                        render: function (data) {
+                            return data
+                                ? parseFloat(data).toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })
+                                : "0.00";
+                        }
+                    },
+                    {
+                        data: "BalanceAmount",
+                        className: "text-end",
+                        render: function (data) {
+                            return data
+                                ? parseFloat(data).toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })
+                                : "0.00";
+                        }
+                    },
+                    {
+                        data: "Status",
+                        className: "text-center align-middle",
+                        render: function (data) {
+
+                            // Premium Soft Color Mapping
+                            const statusMap = {
+                                0: {
+                                    text: "Unpaid",
+                                    bg: "rgba(220, 53, 69, 0.12)",
+                                    color: "#dc3545",
+                                    border: "rgba(220, 53, 69, 0.25)",
+                                    icon: "bi-x-circle-fill"
+                                },
+                                1: {
+                                    text: "Paid",
+                                    bg: "rgba(25, 135, 84, 0.12)",
+                                    color: "#198754",
+                                    border: "rgba(25, 135, 84, 0.25)",
+                                    icon: "bi-check-circle-fill"
+                                },
+                                2: {
+                                    text: "Partially Paid",
+                                    bg: "rgba(255, 193, 7, 0.15)",
+                                    color: "#b58100",
+                                    border: "rgba(255, 193, 7, 0.3)",
+                                    icon: "bi-hourglass-split"
+                                }
+                            };
+
+                            const status = statusMap[data] || {
+                                text: "Unknown",
+                                bg: "rgba(108, 117, 125, 0.12)",
+                                color: "#6c757d",
+                                border: "rgba(108, 117, 125, 0.25)",
+                                icon: "bi-question-circle-fill"
+                            };
+
+                            return `
+                                <span class="d-inline-flex align-items-center rounded-pill fw-semibold" 
+                                      style="
+                                        background-color: ${status.bg}; 
+                                        color: ${status.color}; 
+                                        border: 1px solid ${status.border};
+                                        padding: 0.25rem 0.65rem; 
+                                        font-size: 0.725rem; 
+                                        letter-spacing: 0.3px;
+                                      ">
+                                    <i class="bi ${status.icon} me-1" style="font-size: 0.75rem; opacity: 0.9;"></i>
+                                    <span>${status.text}</span>
+                                </span>`;
+                        }
+                    },
+                    { data: "CreatedByUser" },
+                    {
+                        data: null,
+                        orderable: false,
+                        searchable: false,
+                        className: "text-center",
+                        render: function (data, type, row) {
+
+                            const isCancelled = row.IsCancelled;
+                            const hasPayment = row.PaidAmount > 0;
+                            const hasServiceProvider = row.ServiceProviderId != 0;
+
+                            // Edit Action Logic
+                            const editAction = (isCancelled || hasPayment)
+                                ? `<li>
+                                    <span class="dropdown-item disabled text-muted" title="${isCancelled ? 'Cancelled invoice cannot be edited' : 'Invoice cannot be edited after payment'}">
+                                        <i class="fas fa-pen me-2"></i> Edit
+                                    </span>
+                                   </li>`
+                                : `<li>
+                                    <a class="dropdown-item" href="/Invoice/EditPurchaseInvoice/${row.InvoiceId}">
+                                        <i class="fas fa-pen text-warning me-2"></i> Edit
+                                    </a>
+                                   </li>`;
+
+                            // Payment Action Logic (All Data Attributes Added Here)
+                            const paymentAction = hasServiceProvider
+                                ? `<li>
+                                    <button type="button"
+                                            class="dropdown-item btnPurchaseVoucher"
+                                            ${isCancelled ? 'disabled' : ''}
+                                            data-invoiceid="${row.InvoiceId}"
+                                            data-invoiceno="${row.InvoiceNo}"
+                                            data-jobno="${row.JobNo || ''}"
+                                            data-blno="${row.BlNo || ''}"
+                                            data-spname="${row.ServiceProviderName || ''}"
+                                            title="${isCancelled ? 'Cancelled invoice cannot receive payment' : 'Payment'}">
+                                        <i class="fas fa-money-check text-success me-2"></i> Payment
+                                    </button>
+                                   </li>`
+                                : '';
+
+                            // Cancel Action Logic
+                            const cancelAction = hasServiceProvider
+                                ? `<li>
+                                    <button type="button"
+                                            class="dropdown-item btnCancelInvoice"
+                                            ${isCancelled ? 'disabled' : ''}
+                                            data-invoiceid="${row.InvoiceId}"
+                                            data-invoiceno="${row.InvoiceNo}"
+                                            title="${isCancelled ? 'Invoice already cancelled' : 'Cancel Invoice'}">
+                                        <i class="fas fa-times-circle text-danger me-2"></i> Cancel Invoice
+                                    </button>
+                                   </li>`
+                                : '';
+
+                            // Credit Note Action Logic
+                            const creditNoteAction = (isCancelled && hasServiceProvider)
+                                ? `<li>
+                                    <button type="button"
+                                            class="dropdown-item btnViewCreditNote"
+                                            data-invoiceid="${row.InvoiceId}">
+                                        <i class="fas fa-file-invoice text-secondary me-2"></i> Credit Note
+                                    </button>
+                                   </li>`
+                                : '';
+
+                            return `
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <!-- Direct View Button -->
+                                    <a href="/Invoice/PurchaseInvoiceView/${row.InvoiceId}?serviceProviderId=${row.ServiceProviderId}"
+                                       class="btn btn-outline-primary"
+                                       title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+
+                                    <!-- Direct PDF Button -->
+                                    <a href="/pdfs/purchase/${row.InvoiceNo}.pdf"
+                                       class="btn btn-outline-info"
+                                       title="Download PDF"
+                                       download>
+                                        <i class="fas fa-file-pdf"></i>
+                                    </a>
+
+                                    <!-- Dropdown Menu -->
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button"
+                                                class="btn btn-outline-secondary dropdown-toggle"
+                                                data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                            <i class="fas fa-ellipsis-h"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            ${editAction}
+                                            ${paymentAction}
+                                            ${cancelAction}
+                                            ${creditNoteAction}
+                                        </ul>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                ]
+            });
+        }
+
+        function loadCustomer() {
+
+            $('#filterServiceProvider').select2({
+
+                placeholder: 'Select Service Provider',
+                allowClear: true,
+                width: '100%',
+
+                ajax: {
+                    url: '/Dropdown/GetServiceProviderSearch',
+                    type: 'GET',
+                    dataType: 'json',
+                    delay: 250,
+
+                    data: function (params) {
+                        return {
+                            search: params.term || "",
+                            page: params.page || 1
+                        };
+                    },
+
+                    processResults: function (data, params) {
+
+                        params.page = params.page || 1;
+
+                        return {
+                            results: data.data,
+                            pagination: {
+                                more: data.hasMore
+                            }
+                        };
+                    },
+
+                    cache: true
+                }
+            });
+        }
+
+        function loadCustomer_bk(selectedId = null) {
+            $.ajax({
+                url: '/Dropdown/GetServiceProvider',
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+
+                    let $dropdown = $('#filterServiceProvider');
+
+                    $dropdown.empty();
+                    $dropdown.append('<option value=""></option>');
+
+                    $.each(response.data, function (i, item) {
+                        $dropdown.append(
+                            `<option value="${item.Id}">
+                                        ${item.CustomerName} (${item.CustomerCode})
+                                    </option>`
+                        );
+                    });
+
+                    // Destroy previous Select2 instance (important)
+                    if ($dropdown.hasClass("select2-hidden-accessible")) {
+                        $dropdown.select2('destroy');
+                    }
+
+                    // Initialize Select2
+                    $dropdown.select2({
+                        placeholder: "Select Service Provider",
+                        allowClear: true,
+                        width: '100%'
+                    });
+
+                    // Set selected value
+                    if (selectedId) {
+                        $dropdown.val(selectedId).trigger('change');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error loading service :", error);
+                }
+            });
+        }
+
+        function loadJobNo(){
+
+             $('#filterJobNo').select2({
+
+                placeholder: 'Select Job Number',
+                allowClear: true,
+
+                ajax: {
+
+                    url: '/Dropdown/GetJobNos',
+                    type: 'POST',
+                    dataType: 'json',
+                    delay: 250,
+
+                    data: function (params) {
+                        return {
+                            search: params.term || "",
+                            page: params.page || 1
+                        };
+                    },
+
+                    processResults: function (data, params) {
+
+                        params.page = params.page || 1;
+
+                        return {
+                            results: data.data,
+                            pagination: {
+                                more: data.hasMore
+                            }
+                        };
+                    },
+
+                    cache: true
+                }
+            });
+
+        }
+
+        function CancelInvoice(invoiceId) {
+
+            Swal.fire({
+                title: "Processing...",
+                text: "Please wait while the invoice is being cancelled.",
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: "/Invoice/CancelInvoicePurchase",
+                type: "POST",
+                data: {
+                    invoiceId: invoiceId
+                },
+                success: function (response) {
+
+                    Swal.close();
+
+                    if (response.errorCode == 200) {
+
+                        Swal.fire({
+                            icon: "success",
+                            title: "Success",
+                            text: response.data
+                        });
+
+                        loadRecords();
+                    }
+                    else {
+
+                        Swal.fire({
+                            icon: "error",
+                            title: "Error",
+                            text: response.data
+                        });
+
+                    }
+                },
+                error: function () {
+
+                    Swal.close();
+
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error",
+                        text: "Something went wrong."
+                    });
+                }
+            });
+        }
+
+        function validateForm() {
+            let valid = true;
+
+            $("#purchaseVoucherForm [required]").each(function () {
+            let $this = $(this);
+            let value = $this.val();
+
+            // 🔹 Select2 (multiple ya single)
+            if ($this.hasClass("select2-hidden-accessible")) {
+                if (!value || value.length === 0) {
+                    $this.next(".select2-container").addClass("is-invalid");
+                    valid = false;
+                } else {
+                    $this.next(".select2-container").removeClass("is-invalid");
+                }
+
+
+            }
+            // 🔹 Normal inputs
+            else {
+                if (!value) {
+                    $this.addClass("is-invalid");
+                    valid = false;
+                } else {
+                    $this.removeClass("is-invalid");
+                }
+            }
+        });
+
+        return valid;
+    }
+
+    function clearForm() {
+
+        $("#filterSection").find("input").val("");
+        $("#filterSection").find("select").val(null).trigger("change");
+
+        var today = new Date();
+        var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        var lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+        $('#filterFromDate').val(formatDateFilter(firstDay));
+        $('#filterToDate').val(formatDateFilter(lastDay));
+    }
+
+    </script>
+}

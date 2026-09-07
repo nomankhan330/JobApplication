@@ -1,0 +1,501 @@
+﻿@inject BusinessLogic.Interfaces.ISessionHelper SessionHelper
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - C & F Management System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="Clearing and Forwarding (C&F) business" name="description" />
+    <meta content="Themesdesign" name="author" />
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="~/assets/images/favicon.ico">
+
+    <!-- Bootstrap Css -->
+    <link href="~/assets/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
+    <!-- Icons Css -->
+    <link href="~/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <!-- App Css-->
+    <link href="~/assets/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
+    <!-- Custom Css-->
+    <link href="~/assets/css/custom.css" id="app-style" rel="stylesheet" type="text/css" />
+    <!-- Toastr Css-->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" asp-append-version="true" />
+    <!-- Sweetalert2 Css-->
+    <link href="~/assets/libs/sweetalert2/sweetalert2.min.css" rel="stylesheet" type="text/css" />
+
+    @RenderSection("Head", required: false)
+
+</head>
+
+<body data-topbar="dark">
+
+    <!-- <body data-layout="horizontal" data-topbar="dark"> -->
+
+    <div id="layout-wrapper">
+        
+        <!-- Header Start -->
+        <header id="page-topbar">
+            <div class="navbar-header">
+                <div class="d-flex">
+                    <!-- LOGO -->
+                    <div class="navbar-brand-box">
+                        <a href="#" class="logo logo-dark">
+                           @*  <span class="logo-sm">
+                                <img src="~/assets/images/logo-sm.png" alt="logo-sm" height="22">
+                            </span> *@
+                            <span class="logo-lg">
+                                <img src="~/assets/images/logo-dark.png" alt="logo-dark" height="20">
+                            </span>
+                        </a>
+
+                        <a href="#" class="logo logo-light" style="display: none; width: 100%; padding: 0; margin: 0;">
+                            <span class="logo-sm">
+                                <img src="~/assets/images/logo-sm.png" alt="logo-sm-light" height="22">
+                            </span>
+                            <span class="logo-lg" style="display: none; width: 100%; padding: 0;">
+                                <img src="~/assets/images/logo-white.png" alt="logo-light" style="width: 100%; height: auto; display: block; object-fit: cover;">
+                            </span>
+                        </a>
+                    </div>
+
+                    <button type="button" class="btn btn-sm px-3 font-size-24 header-item waves-effect" id="vertical-menu-btn">
+                        <i class="ri-menu-2-line align-middle"></i>
+                    </button>
+                    
+                </div>
+
+                <div class="d-flex">
+
+                    <div class="dropdown d-inline-block d-lg-none ms-2">
+                        <button type="button" class="btn header-item noti-icon waves-effect" id="page-header-search-dropdown"
+                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="ri-search-line"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
+                             aria-labelledby="page-header-search-dropdown">
+
+                            <form class="p-3">
+                                <div class="mb-3 m-0">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" placeholder="Search ...">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-primary" type="submit"><i class="ri-search-line"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="dropdown d-none d-lg-inline-block ms-1">
+                        <button type="button" class="btn header-item noti-icon waves-effect" data-toggle="fullscreen">
+                            <i class="ri-fullscreen-line"></i>
+                        </button>
+                    </div>
+
+                    <div class="dropdown d-inline-block user-dropdown">
+                        <button type="button" class="btn header-item waves-effect" id="page-header-user-dropdown"
+                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <img class="rounded-circle header-profile-user" src="~/uploads/users/@SessionHelper.Photo"
+                                 alt="Header Avatar">
+                            <span class="d-none d-xl-inline-block ms-1">@SessionHelper.UserName</span>
+                            <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <!-- item-->
+                            <a class="dropdown-item" href="@Url.Action("Profile", "Account")">
+                                <i class="ri-user-line align-middle me-1"></i> Profile
+                            </a>
+                            <a class="dropdown-item d-block" href="#"><i class="ri-settings-2-line align-middle me-1"></i> Settings</a>
+                            <a class="dropdown-item" href="#"><i class="ri-lock-unlock-line align-middle me-1"></i> Lock screen</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item text-danger" id="Logout" href="javascript:;"><i class="ri-shut-down-line align-middle me-1 text-danger"></i> Logout</a>
+                        </div>
+                    </div>
+
+                    <div class="dropdown d-inline-block d-none">
+                        <button type="button" class="btn header-item noti-icon right-bar-toggle waves-effect">
+                            <i class="ri-settings-2-line"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+        <!-- Header End -->
+
+        <!-- Left Sidebar Start -->
+        <div class="vertical-menu">
+
+            <div data-simplebar class="h-100">
+
+                <!-- User details -->
+                <div class="user-profile text-center mt-3">
+                    <div class="">
+                        <img src="~/uploads/users/@SessionHelper.Photo" alt="" class="avatar-md rounded-circle">
+                    </div>
+                    <div class="mt-3">
+                        <h4 class="font-size-16 mb-1">@SessionHelper.UserName</h4>
+                        <span class="text-muted"><i class="ri-record-circle-line align-middle font-size-14 text-success"></i> Online</span>
+                    </div>
+                </div>
+
+                <!--- Sidemenu -->
+                <div id="sidebar-menu">
+                    <!-- Left Menu Start -->
+                    <ul class="metismenu list-unstyled" id="side-menu">
+                        <li class="menu-title">Menu</li>
+
+                        <li>
+                            <a href="/Dashboard/Index" class="waves-effect">
+                                <i class="ri-dashboard-line"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        @if (SessionHelper.UserType == 1)
+                        {
+                            <li>
+                                <a href="/Account/Users" class=" waves-effect">
+                                    <i class="ri-account-circle-line"></i>
+                                    <span>Users</span>
+                                </a>
+                            </li>
+                        }
+                        else if (SessionHelper.UserType == 3) //Authorize User
+                        {
+                             <li>
+                                <a href="/Account/CostCenter" class=" waves-effect">
+                                    <i class="ri-calendar-2-line"></i>
+                                    <span>Cost Center</span>
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                    <i class="ri-mail-send-line"></i>
+                                    <span>Create Job</span>
+                                </a>
+                                <ul class="sub-menu" aria-expanded="false">
+                                    <li><a href="/Job/Import">Import</a></li>
+                                    <li><a href="/Job/Export">Export</a></li>
+                                </ul>
+                            </li>
+
+                            <li>
+                                <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                    <i class="fas fa-th-list"></i>
+                                    <span>Accounts Management</span>
+                                </a>
+                                <ul class="sub-menu" aria-expanded="false">
+                                    <li><a href="/Invoice/SalesInvoice">Sales Invoice</a></li>
+                                    <li><a href="/Invoice/PurchaseInvoice">Purchase Invoice</a></li>
+                                    <li><a href="/Report/CustomerSOA">Account Statement</a></li>
+                                    <li><a href="/Report/ServiceProviderSOA">Account Statement SP</a></li>
+                                    <li><a href="/Invoice/GovtTax">Government TAX</a></li>
+                                    @* <li><a href="#">Ledger</a></li>
+                                    <li><a href="#">Search</a></li> *@
+                                </ul>
+                            </li>
+                        }
+                        else if (SessionHelper.UserType == 4) //UnAuthorize User
+                        {
+                            <li>
+                                <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                    <i class="ri-mail-send-line"></i>
+                                    <span>Create Job</span>
+                                </a>
+                                <ul class="sub-menu" aria-expanded="false">
+                                    <li><a href="/Job/Import">Import</a></li>
+                                    <li><a href="/Job/Export">Export</a></li>
+                                </ul>
+                            </li>                            
+                        }
+                        else
+                        {
+                            <li>
+                                <a href="/Account/CostCenter" class=" waves-effect">
+                                    <i class="ri-calendar-2-line"></i>
+                                    <span>Cost Center</span>
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="/Account/Users" class=" waves-effect">
+                                    <i class="ri-account-circle-line"></i>
+                                    <span>Users</span>
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="/Customer/Index" class=" waves-effect">
+                                    <i class="ri-profile-line"></i>
+                                    <span>Customer / Service Provider</span>
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="/Job/InvoiceAccessRequests" class=" waves-effect">
+                                    <i class="ri-calendar-2-line"></i>
+                                    <span>Invoice Access Requests</span>
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                    <i class="ri-mail-send-line"></i>
+                                    <span>Create Job</span>
+                                </a>
+                                <ul class="sub-menu" aria-expanded="false">
+                                    <li><a href="/Job/Import">Import</a></li>
+                                    <li><a href="/Job/Export">Export</a></li>
+                                </ul>
+                            </li>
+
+                            <li>
+                                <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                    <i class="fas fa-th-list"></i>
+                                    <span>Accounts Management</span>
+                                </a>
+                                <ul class="sub-menu" aria-expanded="false">
+                                    <li><a href="/Invoice/SalesInvoice">Sales Invoice</a></li>
+                                    <li><a href="/Invoice/PurchaseInvoice">Purchase Invoice</a></li>
+                                    <li><a href="/Report/CustomerSOA">Account Statement</a></li>
+                                    <li><a href="/Report/ServiceProviderSOA">Account Statement SP</a></li>
+                                    <li><a href="/Invoice/GovtTax">Government TAX</a></li>
+                                    @* <li><a href="#">Ledger</a></li>
+                                    <li><a href="#">Search</a></li> *@
+                                </ul>
+                            </li>
+
+                            <li>
+                                <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                    <i class="fas fa-clipboard-list"></i>
+                                    <span>Reports</span>
+                                </a>
+                                <ul class="sub-menu" aria-expanded="false">
+                                    <li><a href="/Report/CostCenter">Cost Center</a></li>
+                                    <li><a href="/Report/JobReport">Job Report</a></li>
+                                    <li><a href="/Report/SalesReport">Sales Report</a></li>
+                                </ul>
+                            </li>
+
+                            <li>
+                                <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                    <i class="fas fa-sliders-h"></i>
+                                    <span>Settings</span>
+                                </a>
+                                <ul class="sub-menu" aria-expanded="false">
+                                    <li><a href="#">Admin</a></li>
+                                    <li><a href="#">Cost Centers</a></li>
+                                    <li><a href="#">Users</a></li>
+                                    <li><a href="#">Jobs</a></li>
+                                    <li><a href="#">Accounts</a></li>
+                                    <li><a href="#">Invoices</a></li>
+                                </ul>
+                            </li>
+                        }
+
+
+                    </ul>
+                </div>
+                <!-- Sidebar -->
+            </div>
+        </div>
+        <!-- Left Sidebar End -->
+
+        <div class="main-content">
+            
+            @RenderBody()
+
+            <footer class="footer">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <script>document.write(new Date().getFullYear())</script> © C & F Management System.
+                        </div>
+                        <div class="col-sm-6">
+                            @* <div class="text-sm-end d-none d-sm-block">
+                                Crafted with <i class="mdi mdi-heart text-danger"></i> by Themesdesign
+                            </div> *@
+                        </div>
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+
+    </div>
+
+    <!-- Right Sidebar Start -->
+    <div class="right-bar">
+        <div data-simplebar class="h-100">
+            <div class="rightbar-title d-flex align-items-center px-3 py-4">
+
+                <h5 class="m-0 me-2">Settings</h5>
+
+                <a href="javascript:void(0);" class="right-bar-toggle ms-auto">
+                    <i class="mdi mdi-close noti-icon"></i>
+                </a>
+            </div>
+
+            <!-- Settings -->
+            <hr class="mt-0" />
+            <h6 class="text-center mb-0">Choose Layouts</h6>
+
+            <div class="p-4">
+                <div class="mb-2">
+                    <img src="~/assets/images/layouts/layout-1.jpg" class="img-fluid img-thumbnail" alt="layout-1">
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input theme-choice" type="checkbox" id="light-mode-switch" checked>
+                    <label class="form-check-label" for="light-mode-switch">Light Mode</label>
+                </div>
+
+                <div class="mb-2">
+                    <img src="~/assets/images/layouts/layout-2.jpg" class="img-fluid img-thumbnail" alt="layout-2">
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input theme-choice" type="checkbox" id="dark-mode-switch" data-bsStyle="~/assets/css/bootstrap.min.css" data-appStyle="assets/css/app.min.css">
+                    <label class="form-check-label" for="dark-mode-switch">Dark Mode</label>
+                </div>
+
+                <div class="mb-2">
+                    <img src="~/assets/images/layouts/layout-3.jpg" class="img-fluid img-thumbnail" alt="layout-3">
+                </div>
+                <div class="form-check form-switch mb-5">
+                    <input class="form-check-input theme-choice" type="checkbox" id="rtl-mode-switch" data-appStyle="~/assets/css/app-rtl.min.css">
+                    <label class="form-check-label" for="rtl-mode-switch">RTL Mode</label>
+                </div>
+
+
+            </div>
+
+        </div> <!-- end slimscroll-menu-->
+    </div>
+    <!-- Right Sidebar End -->
+
+    <!-- Right bar overlay-->
+    <div class="rightbar-overlay"></div>
+
+
+    <!-- Javascripts -->
+    <script src="~/assets/libs/jquery/jquery.min.js"></script>
+    <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/libs/metismenu/metisMenu.min.js"></script>
+    <script src="~/assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="~/assets/libs/node-waves/waves.min.js"></script>
+
+    <!-- form mask -->
+    <script src="~/assets/libs/inputmask/jquery.inputmask.min.js"></script>
+
+    <!-- form mask init -->
+    <script src="~/assets/js/pages/form-mask.init.js"></script>
+
+    <!-- Moment JS (must be above DataTables date plugins if used) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
+    <!-- Datatable init js -->
+    <script src="~/assets/js/pages/datatables.init.js"></script>
+
+    <script src="~/assets/js/app.js"></script>
+    
+    <!-- Sweet Alerts js -->
+    <script src="~/assets/libs/sweetalert2/sweetalert2.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+
+    <!-- Custom js -->
+    <script src="~/assets/js/custom.js"></script>
+
+    <script>
+        n(document).ready(function () {
+            var e;
+            0 < n("#sidebar-menu").length &&
+                0 < n("#sidebar-menu .mm-active .active").length &&
+                300 < (e = n("#sidebar-menu .mm-active .active").offset().top) &&
+                ((e -= 300), n(".vertical-menu .simplebar-content-wrapper").animate({ scrollTop: e }, "slow"));
+
+            // NAYA CODE: Page load hotay sath hi check karein ke user ne pehle collapse kiya tha ya nahi
+            if (sessionStorage.getItem("sidebar-collapsed") === "true" && 992 <= n(window).width()) {
+                n("body").addClass("vertical-collpsed");
+            }
+        }),
+    </script>
+
+    <script>
+        
+        // 1. DataTables global core defaults injection
+        if (typeof window.DataTable !== 'undefined') {
+            window.DataTable.defaults.errMode = 'none';
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            if (window.$ && $.fn && $.fn.dataTable) {
+                $.fn.dataTable.ext.errMode = 'none';
+                $.extend(true, $.fn.dataTable.defaults, {
+                    ajax: {
+                        error: function (xhr, textStatus, errorThrown) {
+                            if (xhr.status === 401) {
+                                return true;
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        // 2. Pure JavaScript AJAX Interceptor
+        (function() {
+            var open = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function() {
+                this.addEventListener("readystatechange", function() {
+                    if (this.readyState === 4 && this.status === 401) {
+
+                        if (window.$ && $.fn && $.fn.dataTable) {
+                            $.fn.dataTable.ext.errMode = 'none';
+                        }
+
+                        handleSessionExpired();
+
+                        // Immediately login page par bhejien bina history chore
+                       // window.location.replace('/Home/Login');
+                    }
+                }, false);
+                open.apply(this, arguments);
+            };
+        })();
+
+        // 3. Logout function
+        document.addEventListener("DOMContentLoaded", function() {
+            var logoutBtn = document.getElementById("Logout");
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    fetch('/Account/logout', { method: 'POST' })
+                        .then(() => { window.location.href = "/Home/Login"; });
+                });
+            }
+        });
+    </script>
+    @* <script>
+       
+
+        // 3. Logout ka function
+        $("#Logout").on("click", function (e) {
+            e.preventDefault();
+            $.ajax({
+                type: "post",
+                url: "/Account/logout",
+                success: function (data) {
+                    window.location.href = "/Home/Login";
+                }
+            });
+        });
+    </script> *@
+
+    @RenderSection("Script", required: false)
+</body>
+</html>

@@ -1,0 +1,546 @@
+﻿@inject BusinessLogic.Interfaces.ISessionHelper SessionHelper
+@{
+    ViewData["Title"] = "Cost Centers";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Head {
+    <!-- DataTables -->
+    <link href="~/assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/libs/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        .dataTables_paginate {
+            text-align: right !important;
+        }
+
+        .pagination-rounded .page-link {
+            border-radius: 50px !important;
+        }
+
+        .dataTables_paginate .pagination {
+            justify-content: flex-end !important;
+        }
+    </style>
+}
+
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- start page title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Cost Centers</h4>
+                </div>
+            </div>
+        </div>
+        <!-- end page title -->
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+
+                        <!-- Collapse Button -->
+                        <div class="mb-3" style="display:block;">
+                            <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection" aria-expanded="false" aria-controls="filterSection">
+                                <i class="fa fa-filter"></i> Filter Cost Centers
+                            </button>
+                        </div>
+
+                        <!-- Filter Section -->
+                        <div class="collapse" id="filterSection">
+                            <div class="card mb-3 p-3">
+
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <input id="filterName" class="form-control" placeholder="Name" />
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <input id="filterCode" class="form-control" placeholder="Code" />
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <input id="filterContact" class="form-control" placeholder="Contact Person" />
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <select id="filterStatus" class="form-control">
+                                            <option value="">All Status</option>
+                                            <option value="true">Active</option>
+                                            <option value="false">Inactive</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button id="btnSearch" class="btn btn-primary me-2"><i class="fas fa-search"></i> Search</button>
+                                        <button id="btnClear" class="btn btn-secondary"><i class="fas fa-window-close me-1"></i> Clear</button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Add Button -->
+
+
+                        @if(SessionHelper.LoginType != 1)
+                        {
+                            <div class="text-end mb-3">
+                                <button class="btn btn-success" id="btnAdd">
+                                    <i class="fa fa-plus"></i> Add Cost Center
+                                </button>
+                            </div>                           
+                        }
+
+                        <!-- Table -->
+                        <table id="datatable" class="table table-striped table-bordered dt-responsive nowrap" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Id</th>
+                                    <th>Name</th>
+                                    <th>Code</th>
+                                    <th>Contact Person</th>
+                                    <th>Created By</th>
+                                    <th>Created Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                        </table>
+
+                    </div>
+                </div>
+            </div> <!-- end col -->
+        </div>
+
+    </div>
+</div>
+
+<!-- Cost Center Modal -->
+<div class="modal fade" id="costCenterModal" tabindex="-1" aria-labelledby="costCenterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="costCenterModalLabel">Add / Edit Cost Center</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="costCenterForm">
+                    <div class="row">
+
+                        <input type="hidden" id="Id" name="Id" value="" />
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="CostCenterCode">Cost Center Code <span class="required-label">*</span></label>
+                            <input type="text" class="form-control" id="CostCenterCode" name="CostCenterCode" placeholder="Auto Generated" disabled />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="CostCenterName">Cost Center Name <span class="required-label">*</span></label>
+                            <input type="text" class="form-control" id="CostCenterName" name="CostCenterName" placeholder="Client or Business Unit Name" required />
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label" for="Address">Address</label>
+                            <textarea class="form-control textarea-my" id="Address" name="Address" rows="4" placeholder="Client Address"></textarea>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="ContactPerson">Contact Person</label>
+                            <input type="text" class="form-control" id="ContactPerson" name="ContactPerson" placeholder="Contact Person Name" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="ContactNumber">Contact Number</label>
+                            <input type="text" class="form-control" id="ContactNumber" name="ContactNumber" placeholder="Contact Number" data-mask="phone" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="CnicNumber">CNIC Number</label>
+                            <input type="text" class="form-control" id="CNIC" name="CNIC" placeholder="CNIC" data-mask="cnic" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="PhotoFile">Cost Center Photo</label>
+                            <input type="file" class="form-control select-my" id="PhotoFile" name="PhotoFile" />
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <img id="PhotoPreview" src="" style="max-width:150px; display:none; border:1px solid #ccc; padding:5px; border-radius:5px;" />
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label" for="Notes">Notes</label>
+                            <textarea class="form-control textarea-my" id="Notes" name="Notes" rows="2" placeholder="Any remarks"></textarea>
+                        </div>
+
+                        @* <div class="col-md-12 mb-3">
+                            <label class="form-label" for="AdditionalFields">Additional Fields</label>
+                            <textarea class="form-control" id="AdditionalFields" name="AdditionalFields" rows="2" placeholder="Optional Extra Fields (JSON or text)"></textarea>
+                        </div> *@
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="MyPercentage">My Percentage <span class="required-label">*</span></label>
+                            <input type="number" class="form-control" id="MyPercentage" name="MyPercentage"
+                                   placeholder="My Percentage" min="0" max="100" required />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="IsActive">Status <span class="required-label">*</span></label>
+                            <select class="form-control select-my" id="IsActive" name="IsActive" required>
+                                <option value="" disabled>Select Status</option>
+                                <option value="true" selected>Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+                @if(SessionHelper.LoginType != 1)
+                {
+                    <button type="button" id="btnSubmit" class="btn btn-primary">Submit</button>                    
+                }
+                
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@section Script {
+
+    <!-- Required datatable js -->
+    <script src="~/assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="~/assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+
+        $(document).ready(function () {
+
+            applyGlobalInputRules();
+
+            $('#MyPercentage').on('input', function () {
+                if (this.value > 100) this.value = 100;
+                if (this.value < 0) this.value = 0;
+            });
+
+            var myModal = new bootstrap.Modal(document.getElementById('costCenterModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            loadRecords();
+
+            $('#btnAdd').on('click', function () {
+                $("#costCenterForm")[0].reset();
+                $("#costCenterForm [required]").removeClass("is-invalid");
+                $("#Id").val("");
+                $("#CostCenterPhotoPreview").attr("src", "").hide();
+                myModal.show();
+            });
+
+            $("#btnSubmit").on("click", function () {
+                //alert('aa')
+                if (!validateForm()) return;
+
+                var formData = new FormData($("#costCenterForm")[0]);
+                var $btn = $(this);
+
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, value);
+                }
+
+                //return;
+
+                $.ajax({
+                    url: "/CostCenter/SaveCostCenter",
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    beforeSend: function () {
+                        $btn.prop("disabled", true).text("Processing...");
+                    },
+                    success: function (data) {
+                        if (data && data.errorCode == 200) {
+                            showMessage && showMessage("Data saved successfully!", "success");
+                            myModal.hide();
+                            loadRecords();
+                        } else {
+                            var msg = data && data.data ? data.data : "An error occurred";
+                            showMessage && showMessage(msg, "error");
+                        }
+                    },
+                    error: function () {
+                        showMessage && showMessage("An error occurred", "error");
+                    },
+                    complete: function () {
+                        $btn.prop("disabled", false).text("Submit");
+                    }
+                });
+            });
+
+            // Edit
+            $(document).on("click", ".btn-edit", function () {
+
+                let id = $(this).data("id");
+
+                $("#costCenterForm")[0].reset();
+                $("#costCenterForm [required]").removeClass("is-invalid");
+
+                $.ajax({
+                    type: "POST",
+                    url: "/CostCenter/GetCostCenterById",
+                    data: { id: id },
+                    async: false,
+                    success: function (resp) {
+
+                        console.log("edit resp", resp);
+
+                        if (!resp || !resp.CostCenter) {
+                            showMessage && showMessage("Record not found", "error");
+                            return;
+                        }
+
+                        let data = resp.CostCenter;
+
+                        $("#Id").val(data.Id);
+                        $("#CostCenterName").val(data.CostCenterName);
+                        $("#CostCenterCode").val(data.CostCenterCode);
+                        $("#Address").val(data.Address);
+                        $("#ContactPerson").val(data.ContactPerson);
+                        $("#ContactNumber").val(data.ContactNumber);
+                        $("#CNIC").val(data.Cnic);
+                        $("#Notes").val(data.Notes);
+                        $("#AdditionalFields").val(data.AdditionalFields);
+                        $("#MyPercentage").val(data.MyPercentage);
+                        $("#IsActive").val(String(data.IsActive).toLowerCase());
+
+                        if (data.Photo) {
+                            $("#PhotoPreview")
+                                .attr("src", "/uploads/costcenters/" + data.Photo)
+                                .show();
+                        } else {
+                            $("#PhotoPreview").hide();
+                        }
+
+                        myModal.show();
+                    },
+                    error: function () {
+                        showMessage && showMessage("An error occurred while fetching record", "error");
+                    }
+                });
+
+            });
+
+            // Delete
+            $(document).on("click", ".btn-delete", function () {
+
+                let id = $(this).data("id");
+
+                confirmDelete && confirmDelete(function () {
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/CostCenter/DeleteCostCenterById",
+                        data: { id: id },
+                        success: function (resp) {
+                            if (resp && resp.errorCode === 200) {
+                                showMessage && showMessage('Deleted successfully', 'success');
+                                loadRecords();
+                            } else {
+                                var msg = resp && resp.errorMessage ? resp.errorMessage : 'Error deleting record';
+                                showMessage && showMessage(msg, 'error');
+                            }
+                        },
+                        error: function () {
+                            showMessage && showMessage('An error occurred while trying to delete the Record', 'error');
+                        }
+                    });
+
+                });
+
+            });
+
+            // Status
+            $(document).on("click", ".btn-toggle", function () {
+
+                let id = $(this).data("id");
+
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You want to change cost center status",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, update it!"
+                }).then((result) => {
+
+                    if (!result.isConfirmed) return;
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/CostCenter/ToggleCostCenterStatus",
+                        data: { id: id },
+                        success: function (res) {
+
+                            if (!res || res.errorCode !== 200) {
+                                Swal.fire("Error", res.errorMessage || "Something went wrong", "error");
+                                return;
+                            }
+
+                            Swal.fire("Success", "Status updated successfully", "success");
+
+                            $('#datatable').DataTable().ajax.reload(null, false);
+                        }
+                        
+                    });
+
+                });
+
+            });
+
+            // Photo preview
+            $("#PhotoFile").on("change", function () {
+                let file = this.files[0];
+                if (file) {
+                    let reader = new FileReader();
+                    reader.onload = function (e) {
+                        $("#PhotoPreview").attr("src", e.target.result).show();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Search & Clear
+            $("#btnSearch").click(function () {
+                loadRecords();
+            });
+
+            $("#btnClear").click(function () {
+                $("#filterSection").find("input").val("");
+                $("#filterSection").find("select").val("");
+                loadRecords();
+            });
+
+        });
+
+
+        function loadRecords() {
+            
+            if ($.fn.DataTable.isDataTable('#datatable')) {
+                $('#datatable').DataTable().destroy();
+            }
+
+            $('#datatable').DataTable({
+                processing: true,
+                serverSide: true,
+                pageLength: 10,
+                order: [[0, "desc"]],
+
+                ajax: {
+                    url: "/CostCenter/GetCostCenters",
+                    type: "POST",
+                    data: function (d) {
+                        d.name = $("#filterName").val();
+                        d.code = $("#filterCode").val();
+                        d.contact = $("#filterContact").val();
+                        d.status = $("#filterStatus").val();
+                    },
+                    // error: function (xhr) {
+                    //     if (xhr.status === 401) {
+                    //         // Ab bina kisi alert ke direct redirect hoga!
+                    //         window.location.href = '/Home/Login';
+                    //     }
+                    // }
+                },
+                columns: [
+                    { data: "Id" },
+                    { data: "CostCenterName" },
+                    { data: "CostCenterCode" },
+                    { data: "ContactPerson" },
+                    { data: "CreatedByName" },
+                    {
+                        data: "CreatedOn",
+                        render: d => moment(d).format("YYYY-MM-DD")
+                    },
+                    {
+                        data: "IsActive",
+                        render: function (data) {
+                            return `<span class="status-badge ${data ? 'status-active' : 'status-inactive'}">
+                                        <span class="status-dot"></span>
+                                        ${data ? 'Active' : 'Inactive'}
+                                    </span>`;
+                        }
+                    },
+                    {
+                            data: null,
+                            orderable: false,
+                            searchable: false,
+                            className: "text-center align-middle",
+                            render: function (data) {
+                                return `
+                                    <div class="action-btn-group">
+
+                                        <button class="action-btn btn-view" style="display:none;"
+                                                data-id="${data.Id}"
+                                                title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+
+                                        <button class="action-btn btn-edit"
+                                                data-id="${data.Id}"
+                                                title="Edit">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+
+                                        <button class="action-btn btn-delete" style="display:none;"
+                                                data-id="${data.Id}"
+                                                title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+
+                                        <button class="action-btn btn-toggle"
+                                            data-id="${data.Id}"
+                                            title="Archive">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+
+                                    </div>
+                                `;
+                            }
+                        }
+                ]
+            });
+        }
+        
+        function validateForm() {
+            let valid = true;
+
+            $("#costCenterForm [required]").each(function () {
+                if (!$(this).val()) {
+                    $(this).addClass("is-invalid");
+                    valid = false;
+                } else {
+                    $(this).removeClass("is-invalid");
+                }
+            });
+
+            return valid;
+        }
+
+    </script>
+}
