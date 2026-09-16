@@ -21,5 +21,10 @@ namespace BusinessLogic.Interfaces
         public Task<dynamic> RequestInvoiceAccess(int id);
         public Task<dynamic> ApproveInvoiceAccess(int requestId);
         public Task<dynamic> GetPendingRequests();
+        public Task<int> CountJobs(IList<QueryFilters> filters);
+        public Task<FinancialStatisticsDto> GetFinancialStatisticsAsync(DateTime currentStart, DateTime currentEnd, DateTime prevStart, DateTime prevEnd);
+
+        public Task<List<RecentInvoiceDto>> GetRecentInvoicesAsync(int take = 10);
+        public Task<List<JobOperationsShareDto>> GetJobOperationsShareAsync(string period = "ThisMonth");
     }
 }

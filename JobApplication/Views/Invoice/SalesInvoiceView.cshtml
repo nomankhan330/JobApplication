@@ -610,16 +610,20 @@ background:rgba(0,0,0,0.4); z-index:9999; text-align:center; padding-top:20%;">
                     // ================= HEADER =================
 
                     // English Company Details
-                    $("#lblCompanyName").text(users.CompanyName);
-                    $("#lblEstablishmentName").text(users.EstablishmentName);
-                    $("#lblCityCountry").text(users.Country + ", " + users.City);
-                    $("#lblVATNumber").text("VAT No: " + users.Vatnumber);
+                    $("#lblCompanyName").text(users.CompanyName || "N/A");
+                    $("#lblEstablishmentName").text(users.EstablishmentName || "N/A");
+                    $("#lblCityCountry").text(
+                        [users.Country, users.City].filter(Boolean).join(", ") || "N/A"
+                    );
+                    $("#lblVATNumber").text(users.Vatnumber ? "VAT No: " + users.Vatnumber : "N/A");
 
                     // Arabic Company Details
-                    $("#lblCompanyNameAr").text(users.CompanyNameAr);
-                    $("#lblEstablishmentNameAr").text(users.EstablishmentNameAr);
-                    $("#lblCityCountryAr").text(users.CountryAr + "، " + users.CityAr);
-                    $("#lblVATNumberAr").text("رقم ضريبة القيمة المضافة: " + users.Vatnumber);
+                    $("#lblCompanyNameAr").text(users.CompanyNameAr || "N/A");
+                    $("#lblEstablishmentNameAr").text(users.EstablishmentNameAr || "N/A");
+                    $("#lblCityCountryAr").text(
+                        [users.CountryAr, users.CityAr].filter(Boolean).join("، ") || "N/A"
+                    );
+                    $("#lblVATNumberAr").text(users.Vatnumber ? "رقم ضريبة القيمة المضافة: " + users.Vatnumber : "N/A");
 
                     $('#lblInvoiceNo').text(invoice.InvoiceNo);
 
@@ -658,7 +662,9 @@ background:rgba(0,0,0,0.4); z-index:9999; text-align:center; padding-top:20%;">
 
                     $('#lblCustomerAddress').text(invoice.CustomerAddress);
 
-                    $('#lblCustomerCity').text(invoice.RegionName + ', ' + invoice.CountryName);
+                    $('#lblCustomerCity').text(
+                        [invoice.RegionName, invoice.CountryName].filter(Boolean).join(', ') || 'N/A'
+                    );
 
                     $('#lblCustomerVat').text(invoice.CustomerVat);
 

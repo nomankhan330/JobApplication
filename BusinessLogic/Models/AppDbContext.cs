@@ -329,7 +329,6 @@ public partial class AppDbContext : DbContext
         {
             entity.ToTable("PaymentHeader");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.CreatedOn).HasColumnType("datetime");
             entity.Property(e => e.Headers)
                 .HasMaxLength(255)
@@ -654,7 +653,7 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
         });
-        modelBuilder.HasSequence("PurchaseInvoiceSequence").StartsAt(2L);
+        modelBuilder.HasSequence("PurchaseInvoiceSequence").StartsAt(6L);
         modelBuilder.HasSequence("SalesInvoiceSequence");
 
         OnModelCreatingPartial(modelBuilder);

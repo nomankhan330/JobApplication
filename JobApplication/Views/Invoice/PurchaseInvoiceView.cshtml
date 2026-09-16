@@ -308,7 +308,7 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Payment Type</th>
+                        @* <th>Payment Type</th> *@
                         <th>Invoice Detail</th>
                         <th class="text-center">Unit</th>
                         <th class="text-center">Qty</th>
@@ -646,7 +646,9 @@ background:rgba(0,0,0,0.4); z-index:9999; text-align:center; padding-top:20%;">
 
                     $('#lblCustomerAddress').text(invoice.CustomerAddress);
 
-                    $('#lblCustomerCity').text(invoice.RegionName + ', ' + invoice.CountryName);
+                    $('#lblCustomerCity').text(
+                        [invoice.RegionName, invoice.CountryName].filter(Boolean).join(', ') || 'N/A'
+                    );
 
                     $('#lblCustomerVat').text(invoice.CustomerVat);
 
@@ -683,7 +685,7 @@ background:rgba(0,0,0,0.4); z-index:9999; text-align:center; padding-top:20%;">
 
                                 <td>${i + 1}</td>
 
-                                <td>${item.PaymentType}</td>
+                                <td style='display:none;'>${item.PaymentType}</td>
 
                                 <td>${item.InvoiceDetail}</td>
 

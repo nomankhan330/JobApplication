@@ -10,17 +10,8 @@
     <link href="~/assets/libs/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css" />
 
     <style>
-        .dataTables_paginate {
-            text-align: right !important;
-        }
+      
 
-        .pagination-rounded .page-link {
-            border-radius: 50px !important;
-        }
-
-        .dataTables_paginate .pagination {
-            justify-content: flex-end !important;
-        }
     </style>
 }
 
@@ -97,28 +88,23 @@
                             </div>
                         }
 
-                        
-
                         <!-- Datatable -->
-                        <table id="datatable" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Id</th>
-                                    <th>Code</th>
-                                    <th>Type</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>VAT ID</th>
-                                    <th>Country</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                        </table>
-
-                        <div id="tableLoader" style="text-align:center;padding:40px;display:none;">
-                            <div class="spinner-border text-primary"></div>
-                            <div class="mt-2">Loading...</div>
+                        <div class="table-responsive">
+                            <table id="datatable" class="table table-striped table-bordered dt-responsive nowrap w-100">
+                                <thead>
+                                    <tr>
+                                        <th>Id</th>
+                                        <th>Code</th>
+                                        <th>Type</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>VAT ID</th>
+                                        <th>Country</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                            </table>
                         </div>
 
                     </div>
@@ -211,8 +197,8 @@
 
                         <!-- Mailing Name -->
                         <div class="col-md-6 mb-3 english-field">
-                            <label class="form-label">Mailing Name<span class="required-label">*</span></label>
-                            <input type="text" class="form-control" id="MailingName" name="MailingName" required>
+                            <label class="form-label">Mailing Name</label>
+                            <input type="text" class="form-control" id="MailingName" name="MailingName">
                         </div>
 
                         <div class="col-md-6 mb-3 arabic-field">
@@ -222,14 +208,14 @@
 
                         <!-- Email -->
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Email<span class="required-label">*</span></label>
-                            <input type="email" class="form-control" id="Email" name="Email" required>
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="Email" name="Email">
                         </div>
 
                         <!-- Contact No -->
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Contact No.<span class="required-label">*</span></label>
-                            <input type="text" class="form-control" id="ContactNo" name="ContactNo" required>
+                            <label class="form-label">Contact No.</label>
+                            <input type="text" class="form-control" id="ContactNo" name="ContactNo">
                         </div>
 
                         <!-- Address -->
@@ -810,116 +796,93 @@
             }
 
             function loadRecords() {
-               
-                //$("#tableLoader").show();
 
-                if ($.fn.DataTable.isDataTable('#datatable')) {
-                    $('#datatable').DataTable().destroy();
-                }
+    if ($.fn.DataTable.isDataTable('#datatable')) {
+        $('#datatable').DataTable().destroy();
+    }
 
-                $("#datatable").DataTable({
-                    processing: true,
-                    serverSide: true,
-                    searching: true,
-                    paging: true,
-                    lengthChange: true,
-                    pageLength: 10,
-                    deferRender: true,
-                    order: [[0, "desc"]],
-                    ajax: {
-                        url: "/Customer/GetCustomers",
-                        type: "POST",
-                        data: function (d) {
-                            d.customerName = $("#filterCustomerName").val();
-                            d.email = $("#filterEmail").val();
-                            d.vatId = $("#filterVatId").val();
-                            d.status = $("#filterStatus").val();
-                        }
-                    },
+    var table = $("#datatable").DataTable({
+        processing: true,
+        serverSide: true,
+        searching: true,
+        paging: true,
+        lengthChange: true,
+        pageLength: 10,
+        deferRender: true,
+        order: [[0, "desc"]],
 
-                    columns: [
-                        { data: "Id" },
-                        { data: "CustomerCode" },
-                        {
-                            data: "Type",
-                            render: function (data) {
+        dom: "<'row mb-2'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
 
-                                if (data === "Customer") {
-                                    return `
-                                        <span class="badge rounded-pill bg-primary px-3 py-2">
-                                            <i class="fas fa-user me-1"></i> Customer
-                                        </span>`;
-                                }
-
-                                if (data === "Service Provider") {
-                                    return `
-                                        <span class="badge rounded-pill bg-success px-3 py-2">
-                                            <i class="fas fa-tools me-1"></i> Service Provider
-                                        </span>`;
-                                }
-
-                                return `
-                                    <span class="badge rounded-pill bg-secondary px-3 py-2">
-                                        ${data}
-                                    </span>`;
-                            }
-                        },
-                        { data: "CustomerName" },
-                        { data: "Email" },
-                        { data: "VatId" },
-                        { data: "CountryName" },
-                        {
-                            data: "IsActive",
-                            render: function (data) {
-                                return `<span class="status-badge ${data ? 'status-active' : 'status-inactive'}">
-                                            <span class="status-dot"></span>
-                                            ${data ? 'Active' : 'Inactive'}
-                                        </span>`;
-                            }
-                        },
-                        {
-                            data: null,
-                            orderable: false,
-                            searchable: false,
-                            className: "text-center align-middle",
-                            render: function (data) {
-                                return `
-                                    <div class="action-btn-group">
-
-                                        <button class="action-btn btn-view" style="display:none;"
-                                                data-id="${data.Id}"
-                                                title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-
-                                        <button class="action-btn btn-edit"
-                                                data-id="${data.Id}"
-                                                title="Edit">
-                                            <i class="fas fa-pen"></i>
-                                        </button>
-
-                                        <button class="action-btn btn-delete" style="display:none;"
-                                                data-id="${data.Id}"
-                                                title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-
-                                        <button class="action-btn btn-toggle"
-                                            data-id="${data.Id}"
-                                            title="Archive">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-
-                                    </div>
-                                `;
-                            }
-                        }
-                    ],
-                    drawCallback: function () {
-                        $("#tableLoader").hide();
-                    }
-                });
+        language: {
+            //processing: '<div class="spinner-border text-primary spinner-border-sm"></div> Loading...',
+            paginate: {
+                previous: "<i class='fas fa-chevron-left'></i>",
+                next: "<i class='fas fa-chevron-right'></i>"
             }
+        },
+
+        ajax: {
+            url: "/Customer/GetCustomers",
+            type: "POST",
+            data: function (d) {
+                d.customerName = $("#filterCustomerName").val();
+                d.email = $("#filterEmail").val();
+                d.vatId = $("#filterVatId").val();
+                d.status = $("#filterStatus").val();
+            }
+        },
+
+        columns: [
+            { data: "Id" },
+            { data: "CustomerCode" },
+            {
+                data: "Type",
+                render: function (data) {
+                    if (data === "Customer") {
+                        return `<span class="badge rounded-pill bg-primary px-3 py-2"><i class="fas fa-user me-1"></i> Customer</span>`;
+                    }
+                    if (data === "Service Provider") {
+                        return `<span class="badge rounded-pill bg-success px-3 py-2"><i class="fas fa-tools me-1"></i> Service Provider</span>`;
+                    }
+                    return `<span class="badge rounded-pill bg-secondary px-3 py-2">${data}</span>`;
+                }
+            },
+            { data: "CustomerName" },
+            { data: "Email" },
+            { data: "VatId" },
+            { data: "CountryName" },
+            {
+                data: "IsActive",
+                render: function (data) {
+                    return `<span class="status-badge ${data ? 'status-active' : 'status-inactive'}">
+                                <span class="status-dot"></span>
+                                ${data ? 'Active' : 'Inactive'}
+                            </span>`;
+                }
+            },
+            {
+                data: null,
+                orderable: false,
+                searchable: false,
+                className: "text-center align-middle",
+                render: function (data) {
+                    return `
+                        <div class="action-btn-group">
+                            <button class="action-btn btn-edit" data-id="${data.Id}" title="Edit">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="action-btn btn-toggle" data-id="${data.Id}" title="Archive">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        ]
+    });
+}
 
             function validateForm() {
                 let valid = true;

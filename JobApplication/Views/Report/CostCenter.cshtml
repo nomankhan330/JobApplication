@@ -192,9 +192,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
     <script src="~/assets/libs/select2/js/select2.min.js"></script>
 
+    <!-- DataTables PDFMake Base Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+
+    <!-- Arabic Font (Amiri) Dynamic VFS Script -->
+    <script src="https://cdn.jsdelivr.net/gh/bpampuch/pdfmake@master/build/vfs_fonts.js"></script>
+
     <script>
 
-        let reportCompanyName = "Company";
+        var reportCompanyName = "Company";
+        var reportCompanyNameAr = "";
 
         $(document).ready(function () {
             loadCostCenter();
@@ -214,6 +221,17 @@
         });
 
         function loadRecords(isFilterApplied = false) {
+            
+            pdfMake.fonts = {
+                Roboto: {
+                    normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf',
+                    bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf'
+                },
+                Amiri: {
+                    normal: 'https://raw.githack.com/google/fonts/main/ofl/amiri/Amiri-Regular.ttf',
+                    bold: 'https://raw.githack.com/google/fonts/main/ofl/amiri/Amiri-Bold.ttf'
+                }
+            };
 
             // destroy if already exists
             if ($.fn.DataTable.isDataTable('#datatable')) {
@@ -234,7 +252,6 @@
                 order: [[0, "desc"]],
                 searching: false,
                 dom: 'Bfrtip',
-
                 buttons: [
                     {
                         extend: 'excelHtml5',
@@ -242,7 +259,7 @@
 
                         title: function () {
                             const costCenterName = $("#filterCostCenter option:selected").text().trim() || "All";
-                            return `Cost Center: ${costCenterName} (${reportCompanyName})`;
+                            return `Cost Center: ${costCenterName} (${reportCompanyName}  ${reportCompanyNameAr})`;
                         },
 
                         footer: true,
@@ -303,72 +320,120 @@
                         orientation: 'landscape',
                         pageSize: 'A4',
                         footer: true,
-                        title: '', // Default left-aligned title disable kiya gaya hai
+                        title: '',
                         exportOptions: {
                             columns: ':visible:not(:last-child)'
                         },
 
-                        customize: function (doc) {
+                        customize: function(doc) {
 
                             doc.pageOrientation = 'landscape';
                             doc.pageSize = 'A4';
 
-                            // Dynamic Cost Center Name Extract karna
-                            var costCenterName = $("#filterCostCenter option:selected").text().trim() || "All";
-                            const fromDate = $("#filterFromDate").val() || "All";
-                            const toDate = $("#filterToDate").val() || "All";
-
-                            //var headerText = `Cost Center Report - ${costCenterName} (${reportCompanyName})`;
-                            const formattedFromDate = formatReportDate(fromDate);
-                            const formattedToDate = formatReportDate(toDate);
-
-
-                            // Document ke start (top) par Center Aligned Header add karna
-                            doc.content.splice(0, 0, {
-                                text: [
-                                    {
-                                        text: `Cost Center Report - ${costCenterName} (${reportCompanyName})`,
-                                        fontSize: 14,
-                                        bold: true
-                                    },
-                                    {
-                                        text: `\nFrom Date: ${formattedFromDate} To Date: ${formattedToDate}`,
-                                        fontSize: 14,
-                                        bold: true
-                                    }
-                                ],
-                                fontSize: 16,
-                                bold: true,
-                                alignment: 'center',
-                                margin: [0, 0, 0, 12]
-                            });
-
+                            // Set Default Font to Amiri (Fixes □□□ Boxes)
                             doc.defaultStyle = {
-                                fontSize: 6
+                                font: 'Amiri',
+                                fontSize: 8
                             };
 
-                            doc.pageMargins = [5, 15, 5, 10];
-
-                            var tableBody = doc.content[1].table.body;
-
-                            doc.content[1].table.widths =
-                                Array(tableBody[0].length).fill('auto');
-
                             doc.styles.tableHeader = {
-                                fontSize: 7,
+                                font: 'Amiri',
+                                fontSize: 8,
                                 bold: true,
                                 alignment: 'left'
                             };
 
+                            // Extract Filters Data
+                            var costCenterName = $("#filterCostCenter option:selected").text().trim() || "All";
+                            const fromDate = $("#filterFromDate").val() || "All";
+                            const toDate = $("#filterToDate").val() || "All";
+
+                            const formattedFromDate = formatReportDate(fromDate);
+                            const formattedToDate = formatReportDate(toDate);
+
+                            // Fix Arabic Company Name
+                            var fixedArabicName = reportCompanyNameAr;
+
+                            // Structured Header Array (Prevents Text & Bracket Cut-off)
+                            var headerTextArray = [
+                                {
+                                    text: `Cost Center Report - ${costCenterName} (${reportCompanyName} `,
+                                    fontSize: 13,
+                                    bold: true
+                                }
+                            ];
+
+                            if (fixedArabicName) {
+                                headerTextArray.push({
+                                    text: fixArabic(fixedArabicName),
+                                    fontSize: 13,
+                                    bold: true,
+                                    font: 'Amiri'
+                                });
+                            }
+
+                            headerTextArray.push(
+                                {
+                                    text: `)\n`,
+                                    fontSize: 13,
+                                    bold: true
+                                },
+                                {
+                                    text: `From Date: ${formattedFromDate} To Date: ${formattedToDate}`,
+                                    fontSize: 11,
+                                    bold: true
+                                }
+                            );
+
+                            // Inject Header into Document
+                            doc.content.splice(0, 0, {
+                                text: headerTextArray,
+                                alignment: 'center',
+                                margin: [0, 0, 0, 15]
+                            });
+
+                            doc.pageMargins = [5, 15, 5, 10];
+
+                            // Process Table Body Cells for Arabic
+                            // Process Table Body Cells for Arabic
+                            var tableBody = doc.content[1].table.body;
+
+                            for (var i = 0; i < tableBody.length; i++) {
+                                for (var j = 0; j < tableBody[i].length; j++) {
+                                    var cell = tableBody[i][j];
+                                    var cellText = (typeof cell === 'object' && cell !== null && cell.text !== undefined)
+                                        ? cell.text
+                                        : cell;
+
+                                    if (typeof cellText === 'string') {
+                                        var fixedText = fixArabic(cellText);
+
+                                        if (typeof cell === 'object' && cell !== null) {
+                                            cell.text = fixedText;
+                                            cell.font = 'Amiri';
+                                            cell.alignment = 'right';
+                                        } else {
+                                            tableBody[i][j] = {
+                                                text: fixedText,
+                                                font: 'Amiri',
+                                                alignment: 'right'
+                                            };
+                                        }
+                                    }
+                                }
+                            }
+
+                            doc.content[1].table.widths = Array(tableBody[0].length).fill('auto');
+
                             doc.content[1].layout = {
-                                hLineWidth: function () { return 0.5; },
-                                vLineWidth: function () { return 0.5; },
-                                hLineColor: function () { return '#ccc'; },
-                                vLineColor: function () { return '#ccc'; },
-                                paddingLeft: function () { return 2; },
-                                paddingRight: function () { return 2; },
-                                paddingTop: function () { return 1; },
-                                paddingBottom: function () { return 1; }
+                                hLineWidth: function() { return 0.5; },
+                                vLineWidth: function() { return 0.5; },
+                                hLineColor: function() { return '#ccc'; },
+                                vLineColor: function() { return '#ccc'; },
+                                paddingLeft: function() { return 2; },
+                                paddingRight: function() { return 2; },
+                                paddingTop: function() { return 1; },
+                                paddingBottom: function() { return 1; }
                             };
                         }
                     }
@@ -587,22 +652,20 @@
                 url: "/Report/GetCompanyNames",
                 type: "GET",
                 dataType: "json",
-                success: function (response) {
+                success: function(response) {
                     if (response.errorCode === 200) {
-                        const companyName = response.companyName || "";
-                        const companyNameAr = response.companyNameAr || "";
+                        // Separately store English and Arabic names
+                        reportCompanyName = response.companyName || "";
+                        reportCompanyNameAr = response.companyNameAr || "";
 
-                        if (companyName && companyNameAr) {
-                            reportCompanyName =
-                                `${companyName} (${companyNameAr})`;
-                        } else {
-                            reportCompanyName =
-                                companyName || companyNameAr || "Company";
+                        if (!reportCompanyName && !reportCompanyNameAr) {
+                            reportCompanyName = "Company";
                         }
                     }
                 },
-                error: function () {
+                error: function() {
                     reportCompanyName = "Company";
+                    reportCompanyNameAr = "";
                 }
             });
         }
@@ -619,6 +682,20 @@
             $('#filterFromDate').val(formatDateFilter(firstDay));
             $('#filterToDate').val(formatDateFilter(lastDay));
         }
+
+        // Arabic Text & RTL Processing Helper Function
+        // Pure JS Arabic Reshaper Engine (No CDN Needed)
+        function fixArabic(text) {
+            if (!text) return "";
+
+            // Agar Arabic hai to sirf words reverse karo
+            if (/[\u0600-\u06FF]/.test(text)) {
+                return text.split(' ').reverse().join(' ');
+            }
+
+            return text;
+        }
+        
     </script>
 
 }

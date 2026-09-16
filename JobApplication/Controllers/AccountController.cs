@@ -117,6 +117,11 @@ namespace JobApplication.Controllers
             return View();
         }
 
+        public IActionResult AdminUsers()
+        {
+            return View();
+        }
+
         public IActionResult CostCenter()
         {
             return View();

@@ -211,20 +211,37 @@ namespace BusinessLogic.Services
                         c.IsActive
                     };
 
-                // User Type Wise Filter
+
                 if (_session.UserType == 2)
                 {
                     // Admin / Company User
-                    query = query.Where(x => x.ReferenceId == _session.ReferenceId);
+                    query = query.Where(c => c.ReferenceId == _session.ReferenceId);
                 }
                 else
                 {
-                    // Normal User
-                    query = query.Where(x =>
+                    // Assigned Cost Centers Only
+                    query = query.Where(c =>
                         _context.UserCostCenters.Any(uc =>
                             uc.UserId == _session.LoginId &&
-                            uc.CostCenterId == x.Id));
+                            uc.CostCenterId == c.Id));
                 }
+
+                //query = query.Where(x => x.ReferenceId == _session.ReferenceId);
+
+                // User Type Wise Filter
+                //if (_session.UserType == 2)
+                //{
+                //    // Admin / Company User
+                //    query = query.Where(x => x.ReferenceId == _session.ReferenceId);
+                //}
+                //else
+                //{
+                //    // Normal User
+                //    query = query.Where(x =>
+                //        _context.UserCostCenters.Any(uc =>
+                //            uc.UserId == _session.LoginId &&
+                //            uc.CostCenterId == x.Id));
+                //}
 
                 // 🔍 Global Search
                 if (!string.IsNullOrEmpty(search))

@@ -154,13 +154,28 @@
                                 <span>Dashboard</span>
                             </a>
                         </li>
+                       
                         @if (SessionHelper.UserType == 1)
                         {
                             <li>
-                                <a href="/Account/Users" class=" waves-effect">
+                                <a href="/Account/AdminUsers" class=" waves-effect">
                                     <i class="ri-account-circle-line"></i>
                                     <span>Users</span>
                                 </a>
+                            </li>
+
+                            <li>
+                                <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                    <i class="ri-settings-4-line"></i>
+                                    <span>Settings</span>
+                                </a>
+                                <ul class="sub-menu" aria-expanded="false">
+                                    <li><a href="/Setting?type=jobtype">Job Type</a></li>
+                                    <li><a href="/Setting?type=bltype">BL Type</a></li>
+                                    <li><a href="/Setting?type=containertype">Container Type</a></li>
+                                    <li><a href="/Setting?type=country">Country</a></li>
+                                    <li><a href="/Setting?type=paymentheader">Payment Headers</a></li>
+                                </ul>
                             </li>
                         }
                         else if (SessionHelper.UserType == 3) //Authorize User
@@ -281,7 +296,7 @@
                                 </ul>
                             </li>
 
-                            <li>
+                           @*  <li>
                                 <a href="javascript: void(0);" class="has-arrow waves-effect">
                                     <i class="fas fa-sliders-h"></i>
                                     <span>Settings</span>
@@ -294,7 +309,7 @@
                                     <li><a href="#">Accounts</a></li>
                                     <li><a href="#">Invoices</a></li>
                                 </ul>
-                            </li>
+                            </li> *@
                         }
 
 
@@ -397,9 +412,6 @@
     <!-- Moment JS (must be above DataTables date plugins if used) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 
-    <!-- Datatable init js -->
-    <script src="~/assets/js/pages/datatables.init.js"></script>
-
     <script src="~/assets/js/app.js"></script>
     
     <!-- Sweet Alerts js -->
@@ -410,20 +422,7 @@
     <!-- Custom js -->
     <script src="~/assets/js/custom.js"></script>
 
-    <script>
-        n(document).ready(function () {
-            var e;
-            0 < n("#sidebar-menu").length &&
-                0 < n("#sidebar-menu .mm-active .active").length &&
-                300 < (e = n("#sidebar-menu .mm-active .active").offset().top) &&
-                ((e -= 300), n(".vertical-menu .simplebar-content-wrapper").animate({ scrollTop: e }, "slow"));
-
-            // NAYA CODE: Page load hotay sath hi check karein ke user ne pehle collapse kiya tha ya nahi
-            if (sessionStorage.getItem("sidebar-collapsed") === "true" && 992 <= n(window).width()) {
-                n("body").addClass("vertical-collpsed");
-            }
-        }),
-    </script>
+  
 
     <script>
         
@@ -497,5 +496,8 @@
     </script> *@
 
     @RenderSection("Script", required: false)
+
+    <!-- Datatable init js (moved after page scripts so views can load DataTables extensions first) -->
+    <script src="~/assets/js/pages/datatables.init.js"></script>
 </body>
 </html>

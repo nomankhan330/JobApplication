@@ -854,7 +854,18 @@ namespace BusinessLogic.Services
                         user.Email,
                         user.PhoneNo,
                         user.Cnic,
-                        user.Photo
+                        user.Photo,
+
+                        // Company Details
+                        user.CompanyName,
+                        user.CompanyNameAr,
+                        user.EstablishmentName,
+                        user.EstablishmentNameAr,
+                        user.Country,
+                        user.CountryAr,
+                        user.City,
+                        user.CityAr,
+                        user.Vatnumber
                     }
                 };
             }
@@ -904,6 +915,18 @@ namespace BusinessLogic.Services
                 user.Cnic = model.Cnic;
                 user.ModifiedBy = _session.LoginId;
                 user.ModifiedOn = DateTime.Now;
+
+                // User update ke andar yeh fields bhi add karo
+
+                user.CompanyName = model.CompanyName;
+                user.CompanyNameAr = model.CompanyNameAr;
+                user.EstablishmentName = model.EstablishmentName;
+                user.EstablishmentNameAr = model.EstablishmentNameAr;
+                user.Country = model.Country;
+                user.CountryAr = model.CountryAr;
+                user.City = model.City;
+                user.CityAr = model.CityAr;
+                user.Vatnumber = model.Vatnumber;
 
                 // Password is optional during a profile update.
                 if (!string.IsNullOrWhiteSpace(model.Password))

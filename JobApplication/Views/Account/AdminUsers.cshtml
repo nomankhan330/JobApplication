@@ -76,8 +76,6 @@
                                         <select id="filterUserType" class="form-control">
                                             <option value="">All User Types</option>
                                             <option value="1">Admin</option>
-                                            <option value="2">Authorize</option>
-                                            <option value="3">UnAuthorize</option>
                                         </select>
                                     </div>
 
@@ -183,15 +181,6 @@
                                
                             </select>
                         </div>
-
-                        @if(SessionHelper.LoginType == 1)
-                        {
-                            <div class="col-md-6 mb-3" style="display:none;">
-                                <label class="form-label" for="ReferenceId">Reference Admin <span class="required-label">*</span></label>
-                                <select class="form-control select-my" id="ReferenceId" name="ReferenceId" required>
-                                </select>
-                            </div>
-                        }
 
 
                         <div class="col-md-6 mb-3">
@@ -326,6 +315,9 @@
 
                             </div>
                         </fieldset>
+
+                        <input type="hidden" id="ReferenceId" name="ReferenceId">
+
                     </div>
                 </form>
             </div>
@@ -369,7 +361,6 @@
 
         loadRecords();
         loadUserType();
-        loadAdmin();
         loadCostCenters();
 
         if (loginType === 1) {
@@ -497,9 +488,9 @@
 
                     $("#Password").removeAttr("required");
                     $("#Password").val("");
+                    $("#ReferenceId").val(data.ReferenceId);
 
                     loadUserType(data.UserType);
-                    //loadAdmin(data.ReferenceId);
                     loadCostCenters(data.CostCenterIds);
 
                     if (data.Photo) {
@@ -963,33 +954,6 @@
         });
     }
 
-    function loadAdmin(selectedId = null){
-
-        $.ajax({
-            url: '/Dropdown/GetAdmin',
-            type: 'GET',
-            dataType: 'json',
-            success: function (response) {
-
-                let $dropdown = $('#ReferenceId');
-                $dropdown.empty();
-                $dropdown.append('<option value="" disabled>Select Reference Admin</option>');
-
-                $.each(response.data, function (i, item) {
-                    $dropdown.append(`<option value="${item.Id}">${item.UserId}</option>`);
-                });
-
-                // Set selected if ID provided
-                if (selectedId !== null && selectedId !== "" && selectedId !== undefined) {
-                    $dropdown.val(selectedId);
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error("Error loading references:", error);
-            }
-        });
-    }
-
     function loadCostCenters(selectedIds = []) {
 
         var $dropdown = $('#CostCenterIds');
@@ -1024,6 +988,93 @@
     }
 
     function validateForm() {
+        let valid = true;
+        let invalidControls = []; // Un controls ke naam store karne ke liye jo validate nahi hue
+        let checkedRadioNames = {};
+
+        $("#userForm [required]:not([type='hidden'])").each(function() {
+            let $this = $(this);
+            let type = $this.attr("type");
+            let name = $this.attr("name");
+            let id = $this.attr("id");
+            let value = $this.val();
+            let isValidField = true;
+
+            // Field ki pehchan (Label text > Name > ID)
+            let labelText = $("label[for='" + id + "']").text().trim() 
+                            || $this.closest(".form-group, .mb-3").find("label").text().trim() 
+                            || name 
+                            || id 
+                            || "Unknown Field";
+
+            // 🔹 1. Radio Buttons
+            if (type === "radio") {
+                if (name && !checkedRadioNames[name]) {
+                    checkedRadioNames[name] = true;
+                    if ($(`input[name="${name}"]:checked`).length === 0) {
+                        $(`input[name="${name}"]`).addClass("is-invalid");
+                        isValidField = false;
+                    } else {
+                        $(`input[name="${name}"]`).removeClass("is-invalid");
+                    }
+                }
+            }
+            // 🔹 2. Checkboxes
+            else if (type === "checkbox") {
+                if (!$this.is(":checked")) {
+                    $this.addClass("is-invalid");
+                    isValidField = false;
+                } else {
+                    $this.removeClass("is-invalid");
+                }
+            }
+            // 🔹 3. Select2 Controls
+            else if ($this.hasClass("select2-hidden-accessible")) {
+                if (!value || value.length === 0 || (typeof value === "string" && $.trim(value) === "")) {
+                    $this.next(".select2-container").addClass("is-invalid");
+                    isValidField = false;
+                } else {
+                    $this.next(".select2-container").removeClass("is-invalid");
+                }
+            }
+            // 🔹 4. Normal Inputs
+            else {
+                if (!value || (typeof value === "string" && $.trim(value) === "")) {
+                    $this.addClass("is-invalid");
+                    isValidField = false;
+                } else {
+                    $this.removeClass("is-invalid");
+                }
+            }
+
+            // Agar field valid nahi hai toh array mein add karo
+            if (!isValidField) {
+                valid = false;
+                invalidControls.push({
+                    element: $this,
+                    fieldName: labelText,
+                    id: id,
+                    name: name
+                });
+            }
+        });
+
+        // 🔴 Screen / Console Par Missing Controls Check Karein
+        if (!valid) {
+            console.warn("⚠️ Yeh Controls Validate Nahi Hue:", invalidControls);
+        
+            // Browser Console par direct naam dekhne ke liye:
+            let missingNames = invalidControls.map(x => x.fieldName).join(", ");
+            console.log("Missing Fields: " + missingNames);
+
+            // Agar aap Screen par Alert/Toast dikhana chahte hain toh line uncomment karein:
+            // alert("Lazi fields fill karein: " + missingNames);
+        }
+
+        return valid;
+    }
+
+    function validateForm2() {
         let valid = true;
         
         $("#userForm [required]").each(function () {

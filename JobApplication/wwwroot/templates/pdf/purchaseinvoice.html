@@ -9,9 +9,19 @@
             font-family: "Segoe UI", Arial, Helvetica, sans-serif;
             font-size: 14px;
             color: #222;
-            margin: 0;
-            padding: 0;
             line-height: 1.5;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            overflow: hidden !important;
+            /* Content ko 95% scaling par shrink karne ke liye */
+            zoom: 95%;
+        }
+
+        /* Target specific end elements to avoid page overflow */
+        *:last-child {
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
         }
 
         .invoice-container {
@@ -280,7 +290,6 @@
 
                 <tr>
                     <th>#</th>
-                    <th>Type</th>
                     <th>Detail</th>
                     <th>Unit</th>
                     <th>Qty</th>

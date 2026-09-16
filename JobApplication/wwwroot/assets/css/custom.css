@@ -538,19 +538,24 @@ table.fixedHeader-locked {
 /* Loader Positioning Fix (Header ke neeche Table Center me) */
 div.dataTables_wrapper div.dataTables_processing {
     position: absolute !important;
-    top: 160px !important;
+    top: 50% !important;
     left: 50% !important;
-    transform: translateX(-50%) !important;
+    transform: translate(-50%, -50%) !important;
     margin: 0 !important;
     width: auto !important;
     min-width: 140px !important;
     height: auto !important;
-    z-index: 10 !important;
+    z-index: 9999 !important;
     background: #ffffff !important;
     border: 1px solid #dee2e6 !important;
     border-radius: 8px !important;
     padding: 12px 24px !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Ensure wrapper is positioned so absolute processing element is within it */
+div.dataTables_wrapper {
+    position: relative !important;
 }
 
 /* Controls Row Layout */
@@ -560,7 +565,6 @@ div.dataTables_wrapper div.dataTables_processing {
 
 /* Outer Wrapper Gap Reset */
 .dataTables_wrapper {
-    position: relative !important;
     padding-bottom: 0 !important;
     margin-bottom: 0 !important;
 }

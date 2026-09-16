@@ -121,13 +121,34 @@
 }
 
 <div class="page-content">
+    <!-- Full page loader for dashboard -->
+    <div id="dashboardFullLoader" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.85); z-index:99999; display:flex; align-items:center; justify-content:center;">
+        <div style="text-align:center;">
+            <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"></div>
+            <div style="margin-top:12px; font-weight:600; color:#333;">Loading dashboard, please wait...</div>
+        </div>
+    </div>
     <div class="container-fluid">
 
         <!-- start page title -->
-        <div class="row">
+        <div class="row" style="display:none;">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                     <h4 class="mb-sm-0">Dashboard</h4>
+                    <div class="d-flex align-items-center">
+                        <div class="me-2">
+                            <input type="date" id="globalFromDate" class="form-control form-control-sm" />
+                        </div>
+                        <div class="me-2">
+                            <input type="date" id="globalToDate" class="form-control form-control-sm" />
+                        </div>
+                        <div class="me-2">
+                            <button id="applyDateRange" class="btn btn-sm btn-primary">Apply</button>
+                        </div>
+                        <div>
+                            <button id="clearDateRange" class="btn btn-sm btn-secondary">Clear</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -141,10 +162,10 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Total Jobs</span>
-                                <h3 class="my-2 fw-bold text-dark"><span id="totalJobsCount">142</span></h3>
+                                <h3 class="my-2 fw-bold text-dark"><span id="totalJobsCount">0</span></h3>
                                 <div class="d-flex align-items-center mt-2">
                                     <span id="totalJobsTrend" class="trend-badge trend-badge-success me-2">
-                                        <i class="ri-arrow-right-up-line align-middle"></i> <span class="trend-text">+5.4%</span>
+                                        <i class="ri-arrow-right-up-line align-middle"></i> <span class="trend-text">+0.00%</span>
                                     </span>
                                     <span class="text-muted font-size-12">from previous month</span>
                                 </div>
@@ -166,10 +187,10 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Import Jobs</span>
-                                <h3 class="my-2 fw-bold text-dark"><span id="importJobsCount">85</span></h3>
+                                <h3 class="my-2 fw-bold text-dark"><span id="importJobsCount">0</span></h3>
                                 <div class="d-flex align-items-center mt-2">
                                     <span id="importJobsTrend" class="trend-badge trend-badge-success me-2">
-                                        <i class="ri-arrow-right-up-line align-middle"></i> <span class="trend-text">+3.2%</span>
+                                        <i class="ri-arrow-right-up-line align-middle"></i> <span class="trend-text">+0.00%</span>
                                     </span>
                                     <span class="text-muted font-size-12">from previous month</span>
                                 </div>
@@ -191,10 +212,10 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Export Jobs</span>
-                                <h3 class="my-2 fw-bold text-dark"><span id="exportJobsCount">57</span></h3>
+                                <h3 class="my-2 fw-bold text-dark"><span id="exportJobsCount">0</span></h3>
                                 <div class="d-flex align-items-center mt-2">
                                     <span id="exportJobsTrend" class="trend-badge trend-badge-success me-2">
-                                        <i class="ri-arrow-right-up-line align-middle"></i> <span class="trend-text">+2.1%</span>
+                                        <i class="ri-arrow-right-up-line align-middle"></i> <span class="trend-text">+0.00%</span>
                                     </span>
                                     <span class="text-muted font-size-12">from previous month</span>
                                 </div>
@@ -219,10 +240,11 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Sales Revenue</span>
-                                <h3 class="my-2 fw-bold text-success">Rs. 2,450,000</h3>
+                                <h3 class="my-2 fw-bold text-success" id="salesRevenueAmount">0</h3>
                                 <div class="d-flex align-items-center mt-2">
-                                    <span class="trend-badge trend-badge-success me-2">
-                                        <i class="ri-arrow-right-up-line align-middle"></i> +9.23%
+                                    <span class="trend-badge me-2" id="salesRevenueTrend">
+                                        <i class="ri-arrow-right-up-line align-middle"></i>
+                                        <span class="trend-text">0%</span>
                                     </span>
                                     <span class="text-muted font-size-12">Month to Date</span>
                                 </div>
@@ -244,10 +266,11 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">SP Outstanding</span>
-                                <h3 class="my-2 fw-bold text-danger">Rs. 1,120,000</h3>
+                                <h3 class="my-2 fw-bold text-danger" id="spOutstandingAmount">0</h3>
                                 <div class="d-flex align-items-center mt-2">
-                                    <span class="trend-badge trend-badge-danger me-2">
-                                        <i class="ri-arrow-right-down-line align-middle"></i> 1.09%
+                                    <span class="trend-badge me-2" id="spOutstandingTrend">
+                                        <i class="ri-arrow-right-down-line align-middle"></i>
+                                        <span class="trend-text">0%</span>
                                     </span>
                                     <span class="text-muted font-size-12">Pending Payables</span>
                                 </div>
@@ -269,10 +292,11 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Net Cash Inflow</span>
-                                <h3 class="my-2 fw-bold text-dark">Rs. 1,330,000</h3>
+                                <h3 class="my-2 fw-bold text-dark" id="netCashInflowAmount">0</h3>
                                 <div class="d-flex align-items-center mt-2">
-                                    <span class="trend-badge trend-badge-success me-2">
-                                        <i class="ri-arrow-right-up-line align-middle"></i> 16.2%
+                                    <span class="trend-badge me-2" id="netCashInflowTrend">
+                                        <i class="ri-arrow-right-up-line align-middle"></i>
+                                        <span class="trend-text">0%</span>
                                     </span>
                                     <span class="text-muted font-size-12">Cash Flow Strength</span>
                                 </div>
@@ -295,7 +319,7 @@
                 <div class="card">
                     <div class="card-body pb-0">
                         <div class="float-end d-none d-md-inline-block">
-                            <div class="dropdown card-header-dropdown">
+                            <div class="dropdown card-header-dropdown" style="display:none;">
                                 <a class="text-reset dropdown-btn" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     <span class="text-muted">Report<i class="mdi mdi-chevron-down ms-1"></i></span>
                                 </a>
@@ -311,19 +335,19 @@
                             <div class="row">
                                 <div class="col-sm-4 mb-3 mb-sm-0">
                                     <div class="d-inline-flex">
-                                        <h5 class="me-2">Rs. 845,000</h5>
+                                        <h5 class="me-2" id="salesWeekAmount">Rs. 0</h5>
                                     </div>
                                     <p class="text-muted text-truncate mb-0">Sales (This Week)</p>
                                 </div><!-- end col -->
                                 <div class="col-sm-4 mb-3 mb-sm-0">
                                     <div class="d-inline-flex">
-                                        <h5 class="me-2">Rs. 320,000</h5>
+                                        <h5 class="me-2" id="purchasesWeekAmount">Rs. 0</h5>
                                     </div>
                                     <p class="text-muted text-truncate mb-0">Purchases (This Week)</p>
                                 </div><!-- end col -->
                                 <div class="col-sm-4">
                                     <div class="d-inline-flex">
-                                        <h5 class="me-2">Rs. 525,000</h5>
+                                        <h5 class="me-2" id="netMarginAmount">Rs. 0</h5>
                                     </div>
                                     <p class="text-muted text-truncate mb-0">Net Margin</p>
                                 </div><!-- end col -->
@@ -341,12 +365,12 @@
                     <div class="card-body pb-0">
                         <div class="float-end d-none d-md-inline-block">
                             <div class="dropdown">
-                                <a class="text-reset" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <span class="text-muted">This Year<i class="mdi mdi-chevron-down ms-1"></i></span>
+                                <a class="text-reset dropdown-toggle" href="#" id="revenuePeriodToggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="text-muted" id="revenuePeriodLabel">This Year<i class="mdi mdi-chevron-down ms-1"></i></span>
                                 </a>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <a class="dropdown-item" href="#">Last Month</a>
-                                    <a class="dropdown-item" href="#">This Year</a>
+                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="revenuePeriodToggle">
+                                    <a class="dropdown-item revenue-period" href="#" data-period="ThisYear">This Year</a>
+                                    <a class="dropdown-item revenue-period" href="#" data-period="LastYear">Last Year</a>
                                 </div>
                             </div>
                         </div>
@@ -356,19 +380,19 @@
                             <div class="row">
                                 <div class="col-sm-4 mb-3 mb-sm-0">
                                     <div>
-                                        <h5>Rs. 2,450,000</h5>
+                                        <h5 id="totalInvoicedAmount">Rs. 0</h5>
                                         <p class="text-muted text-truncate mb-0">Total Invoiced</p>
                                     </div>
                                 </div><!-- end col -->
                                 <div class="col-sm-4 mb-3 mb-sm-0">
                                     <div>
-                                        <h5>Rs. 1,850,000</h5>
+                                        <h5 id="collectedCashAmount">Rs. 0</h5>
                                         <p class="text-muted text-truncate mb-0">Collected Cash</p>
                                     </div>
                                 </div><!-- end col -->
                                 <div class="col-sm-4">
                                     <div>
-                                        <h5>Rs. 600,000</h5>
+                                        <h5 id="remainingRecoveryAmount">Rs. 0</h5>
                                         <p class="text-muted text-truncate mb-0">Remaining Recovery</p>
                                     </div>
                                 </div><!-- end col -->
@@ -393,8 +417,8 @@
                                 <i class="mdi mdi-dots-vertical"></i>
                             </a>
                             <div class="dropdown-menu dropdown-menu-end">
-                                <a href="javascript:void(0);" class="dropdown-item">View All Sales Invoices</a>
-                                <a href="javascript:void(0);" class="dropdown-item">View All Purchase Invoices</a>
+                                <a href="/Invoice/SalesInvoice" class="dropdown-item">View All Sales Invoices</a>
+                                <a href="/Invoice/PurchaseInvoice" class="dropdown-item">View All Purchase Invoices</a>
                             </div>
                         </div>
 
@@ -405,67 +429,20 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Invoice No</th>
+                                        <th>Job No</th>
                                         <th>Party Name</th>
                                         <th>Type</th>
-                                        <th>BL Number</th>
+                                        
                                         <th>Grand Total</th>
                                         <th style="width: 120px;">Status</th>
                                     </tr>
                                 </thead><!-- end thead -->
-                                <tbody>
-                                    <tr>
-                                        <td><h6 class="mb-0">INV-2024-001</h6></td>
-                                        <td>Al-Noor Logistics</td>
-                                        <td><span class="badge badge-soft-primary">Sales</span></td>
-                                        <td>BL-99231A</td>
-                                        <td>Rs. 45,000.00</td>
-                                        <td>
-                                            <div class="font-size-13"><i class="ri-checkbox-blank-circle-fill font-size-10 text-success align-middle me-2"></i>Paid</div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><h6 class="mb-0">PINV-2024-042</h6></td>
-                                        <td>Swift Shipping Line</td>
-                                        <td><span class="badge badge-soft-warning">Purchase</span></td>
-                                        <td>BL-88123B</td>
-                                        <td>Rs. 120,000.00</td>
-                                        <td>
-                                            <div class="font-size-13"><i class="ri-checkbox-blank-circle-fill font-size-10 text-danger align-middle me-2"></i>Unpaid</div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><h6 class="mb-0">INV-2024-002</h6></td>
-                                        <td>Universal Traders</td>
-                                        <td><span class="badge badge-soft-primary">Sales</span></td>
-                                        <td>BL-44122C</td>
-                                        <td>Rs. 75,000.00</td>
-                                        <td>
-                                            <div class="font-size-13"><i class="ri-checkbox-blank-circle-fill font-size-10 text-warning align-middle me-2"></i>Partially Paid</div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><h6 class="mb-0">INV-2024-003</h6></td>
-                                        <td>Karam Ceramics</td>
-                                        <td><span class="badge badge-soft-primary">Sales</span></td>
-                                        <td>BL-10293D</td>
-                                        <td>Rs. 32,500.00</td>
-                                        <td>
-                                            <div class="font-size-13"><i class="ri-checkbox-blank-circle-fill font-size-10 text-success align-middle me-2"></i>Paid</div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><h6 class="mb-0">PINV-2024-043</h6></td>
-                                        <td>Maersk Pakistan</td>
-                                        <td><span class="badge badge-soft-warning">Purchase</span></td>
-                                        <td>BL-77481E</td>
-                                        <td>Rs. 210,000.00</td>
-                                        <td>
-                                            <div class="font-size-13"><i class="ri-checkbox-blank-circle-fill font-size-10 text-warning align-middle me-2"></i>Partially Paid</div>
-                                        </td>
-                                    </tr>
+                                <tbody id="recentInvoicesBody">
+                                    <!-- Dynamic -->
                                 </tbody><!-- end tbody -->
                             </table> <!-- end table -->
                         </div>
+
                     </div><!-- end cardbody -->
                 </div><!-- end card -->
             </div><!-- end col -->
@@ -474,40 +451,23 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="float-end">
-                            <select class="form-select shadow-none form-select-sm">
-                                <option selected>This Month</option>
-                                <option value="1">Last Month</option>
-                                <option value="2">This Year</option>
+                            <select id="jobSharePeriod" class="form-select shadow-none form-select-sm">
+                                <option value="ThisMonth" selected>This Month</option>
+                                <option value="LastMonth">Last Month</option>
+                                <option value="ThisYear">This Year</option>
                             </select>
                         </div>
                         <h4 class="card-title mb-4">Job Operations Share</h4>
 
-                        <div class="row">
-                            <div class="col-4">
-                                <div class="text-center mt-4">
-                                    <h5>55%</h5>
-                                    <p class="mb-2 text-truncate">Sea Import</p>
-                                </div>
-                            </div><!-- end col -->
-                            <div class="col-4">
-                                <div class="text-center mt-4">
-                                    <h5>30%</h5>
-                                    <p class="mb-2 text-truncate">Air Import</p>
-                                </div>
-                            </div><!-- end col -->
-                            <div class="col-4">
-                                <div class="text-center mt-4">
-                                    <h5>15%</h5>
-                                    <p class="mb-2 text-truncate">Local Log.</p>
-                                </div>
-                            </div><!-- end col -->
-                        </div><!-- end row -->
+                        <div class="row" id="jobSharePercentages">
+                            
+                        </div>
 
                         <div class="mt-4">
-                            <div id="donut-chart" class="apex-charts"></div>
+                            <div id="job-operation-chart" class="apex-charts"></div>
                         </div>
-                    </div><!-- end cardbody -->
-                </div><!-- end card -->
+                    </div>
+                </div>
             </div><!-- end col -->
         </div>
         <!-- end row -->
@@ -520,48 +480,278 @@
     <script src="~/assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
     <script src="~/assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
     <script src="~/assets/libs/apexcharts/apexcharts.min.js"></script>
-    <script src="~/assets/js/pages/dashboard.init.js"></script>
     <script>
+        // Register handlers early so initial dashboard.init AJAX calls are tracked
+        (function(){
+            var trackedUrls = ['/Dashboard/GetSalesPurchaseTrend', '/Dashboard/GetRevenueBillingTrend', '/Dashboard/GetDashboardData'];
+            var active = 0;
+
+            function showLoader(){
+                try{ $('#dashboardFullLoader').show(); }catch(e){}
+            }
+            function hideLoader(){
+                try{ $('#dashboardFullLoader').hide(); }catch(e){}
+            }
+
+            // move loader to body so position:fixed centers in viewport (avoid ancestor transform issues)
+            try {
+                var $loader = $('#dashboardFullLoader');
+                if ($loader.length) {
+                    $loader.appendTo('body');
+                }
+            } catch (e) {}
+
+            // show loader immediately on page load
+            showLoader();
+
+            $(document).on('ajaxSend.dashboardLoader', function (e, jqXHR, settings) {
+                try{
+                    var url = settings && settings.url ? settings.url.toString() : '';
+                    trackedUrls.forEach(function(u){ if (url.indexOf(u) !== -1) active++; });
+                    if (active > 0) showLoader();
+                }catch(err){ }
+            });
+
+            $(document).on('ajaxComplete.dashboardLoader', function (e, jqXHR, settings) {
+                try{
+                    var url = settings && settings.url ? settings.url.toString() : '';
+                    trackedUrls.forEach(function(u){ if (url.indexOf(u) !== -1) active = Math.max(0, active-1); });
+                    if (active === 0) hideLoader();
+                }catch(err){ }
+            });
+
+            // safety timeout: hide loader after 15s if something hangs
+            setTimeout(function(){ if (active > 0) hideLoader(); }, 10000);
+        })();
+    </script>
+    <script src="~/assets/js/pages/dashboard.init.js"></script>
+
+    <script>
+
         $(function () {
-            function loadStatistics() {
+
+            // ========== Helpers ==========
+            function formatCurrency(amount) {
+                return 'Rs. ' + Number(amount || 0).toLocaleString('en-PK');
+            }
+
+            function applyTrend(elemId, trendText, trendClass) {
+                var $el = $(elemId);
+                $el.removeClass('trend-badge-success trend-badge-danger');
+                if (trendClass) $el.addClass(trendClass);
+                $el.find('.trend-text').text(trendText || '0%');
+
+                var $icon = $el.find('i');
+                if (trendText && trendText.toString().trim().startsWith('-')) {
+                    $icon.removeClass('ri-arrow-right-up-line').addClass('ri-arrow-right-down-line');
+                } else {
+                    $icon.removeClass('ri-arrow-right-down-line').addClass('ri-arrow-right-up-line');
+                }
+            }
+
+            // ========== Update Functions ==========
+            function updateStatistics(resp) {
+                if (!resp) return;
+
+                $('#totalJobsCount').text(resp.totalJobs ?? 0);
+                $('#importJobsCount').text(resp.importJobs ?? 0);
+                $('#exportJobsCount').text(resp.exportJobs ?? 0);
+
+                applyTrend('#totalJobsTrend', resp.totalJobsTrendText, resp.totalJobsTrendClass);
+                applyTrend('#importJobsTrend', resp.importJobsTrendText, resp.importJobsTrendClass);
+                applyTrend('#exportJobsTrend', resp.exportJobsTrendText, resp.exportJobsTrendClass);
+
+                $('#salesRevenueAmount').text(formatCurrency(resp.salesRevenue));
+                $('#spOutstandingAmount').text(formatCurrency(resp.spOutstanding));
+                $('#netCashInflowAmount').text(formatCurrency(resp.netCashInflow));
+
+                applyTrend('#salesRevenueTrend', resp.salesRevenueTrendText, resp.salesRevenueTrendClass);
+                applyTrend('#spOutstandingTrend', resp.spOutstandingTrendText, resp.spOutstandingTrendClass);
+                applyTrend('#netCashInflowTrend', resp.netCashInflowTrendText, resp.netCashInflowTrendClass);
+            }
+
+            function updateRecentInvoices(data) {
+
+                if (!data || !Array.isArray(data)) return;
+                //alert(data.length)
+
+                // 🔹 Jab koi record na mile
+                if (data.length === 0) {
+                    let emptyHtml = `
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="ri-inbox-line display-6 d-block mb-2"></i>
+                                No Recent Invoices Found
+                            </td>
+                        </tr>`;
+                    $('#recentInvoicesBody').html(emptyHtml);
+                    return;
+                }
+
+                let html = '';
+                data.forEach(function (item) {
+                    let typeBadge = item.Type === 'Sales'
+                        ? '<span class="badge badge-soft-primary">Sales</span>'
+                        : '<span class="badge badge-soft-warning">Purchase</span>';
+
+                    // ========== Status Mapping ==========
+                    let statusName = 'Unknown';
+                    let statusClass = 'text-secondary';
+
+                    switch (parseInt(item.Status)) {
+                        case 1:
+                            statusName = 'Paid';
+                            statusClass = 'text-success';
+                            break;
+
+                        case 0:
+                            statusName = 'Unpaid';
+                            statusClass = 'text-danger';
+                            break;
+
+                        case 2:
+                            statusName = 'Partially Paid';
+                            statusClass = 'text-warning';
+                            break;
+
+                        default:
+                            statusName = 'Unknown';
+                            statusClass = 'text-secondary';
+                    }
+
+                    html += `
+                        <tr>
+                            <td><h6 class="mb-0">${item.InvoiceNo || ''}</h6></td>
+                            <td>${item.JobNo || ''}</td>
+                            <td>${item.PartyName || ''}</td>
+                            <td>${typeBadge}</td>
+                            <td>Rs. ${Number(item.GrandTotal || 0).toLocaleString('en-PK', { minimumFractionDigits: 2 })}</td>
+                            <td>
+                                <div class="font-size-13">
+                                    <i class="ri-checkbox-blank-circle-fill font-size-10 ${statusClass} align-middle me-2"></i>
+                                    ${statusName}
+                                </div>
+                            </td>
+                        </tr>`;
+                });
+
+                $('#recentInvoicesBody').html(html);
+            }
+
+            let donutChart = null;
+
+            function updateJobOperationsShare(data) {
+                if (!data || !Array.isArray(data)) return;
+
+                const $chartContainer = $('#job-operation-chart');
+                const $percentContainer = $('#jobSharePercentages');
+
+                // 🔹 Jab koi record na ho (Empty State)
+                if (data.length === 0) {
+                    // Highcharts / ApexCharts instance reset
+                    if (donutChart) {
+                        donutChart.destroy();
+                        donutChart = null;
+                    }
+
+                    // Percentage Section Empty Clear
+                    $percentContainer.html('');
+
+                    // Chart Area mein Empty State UI Message
+                    let emptyHtml = `
+                        <div class="text-center py-5 text-muted">
+                            <i class="ri-pie-chart-line display-4 d-block mb-2 text-secondary opacity-50"></i>
+                            <h6 class="text-muted fw-normal mb-1">No Job Operations Data Found</h6>
+                            <p class="font-size-12 text-muted mb-0">No records available for the selected period.</p>
+                        </div>`;
+        
+                    $chartContainer.html(emptyHtml);
+                    return;
+                }
+
+                // 🔹 Percentages Render
+                let percentHtml = '';
+                data.forEach(function (item) {
+                    percentHtml += `
+                        <div class="col-4">
+                            <div class="text-center mt-4">
+                                <h5>${item.Percentage}%</h5>
+                                <p class="mb-2 text-truncate">${item.Label}</p>
+                            </div>
+                        </div>`;
+                });
+                $percentContainer.html(percentHtml);
+
+                // 🔹 Donut Chart Render / Update
+                const series = data.map(x => x.Percentage);
+                const labels = data.map(x => x.Label);
+
+                // Agar pehle empty HTML container mein lag gaya tha toh usko clear karein
+                if ($chartContainer.find('.text-center').length > 0) {
+                    $chartContainer.html('');
+                }
+
+                if (donutChart) {
+                    donutChart.updateOptions({
+                        series: series,
+                        labels: labels
+                    });
+                } else {
+                    donutChart = new ApexCharts(document.querySelector("#job-operation-chart"), {
+                        series: series,
+                        chart: { type: 'donut', height: 300 },
+                        labels: labels,
+                        legend: { position: 'bottom' },
+                        dataLabels: { enabled: false },
+                        colors: ['#5b73e8', '#34c38f', '#f1b44c', '#f46a6a', '#17a2b8']
+                    });
+                    donutChart.render();
+                }
+            }
+
+            // ========== Main Load Function (Sirf 1 Request) ==========
+            function loadDashboard() {
+                const period = $('#jobSharePeriod').val() || 'ThisMonth';
+                // ensure loader visible while dashboard main data is being fetched
+                try { $('#dashboardFullLoader').show(); } catch (e) { }
+
                 $.ajax({
-                    url: '/Dashboard/GetStatistics',
-                    type: 'POST',
+                    url: '/Dashboard/GetDashboardData',
+                    type: 'GET',
+                    data: { period: period },
+                    cache: false,
                     success: function (resp) {
-                        if (!resp) return;
 
-                        // Numbers
-                        $('#totalJobsCount').text(resp.totalJobs ?? 0);
-                        $('#importJobsCount').text(resp.importJobs ?? 0);
-                        $('#exportJobsCount').text(resp.exportJobs ?? 0);
+                        console.log(resp);
 
-                        // Trends (text + classes)
-                        function applyTrend(elemId, trendText, trendClass) {
-                            var $el = $(elemId);
-                            $el.removeClass('trend-badge-success trend-badge-danger');
-                            if (trendClass) $el.addClass(trendClass);
-                            $el.find('.trend-text').text(trendText || '0%');
-                            // adjust icon
-                            var $icon = $el.find('i');
-                            if (trendText && trendText.toString().trim().startsWith('-')) {
-                                $icon.removeClass('ri-arrow-right-up-line').addClass('ri-arrow-right-down-line');
-                            } else {
-                                $icon.removeClass('ri-arrow-right-down-line').addClass('ri-arrow-right-up-line');
-                            }
+                        if (!resp || resp.error) {
+                            console.error(resp?.message || 'Failed to load dashboard');
+                            return;
                         }
 
-                        applyTrend('#totalJobsTrend', resp.totalJobsTrendText, resp.totalJobsTrendClass);
-                        applyTrend('#importJobsTrend', resp.importJobsTrendText, resp.importJobsTrendClass);
-                        applyTrend('#exportJobsTrend', resp.exportJobsTrendText, resp.exportJobsTrendClass);
+                        updateStatistics(resp.statistics);
+                        updateRecentInvoices(resp.recentInvoices);
+                        updateJobOperationsShare(resp.jobOperationsShare);
+
+                        // hide loader immediately after main dashboard data applied
+                        try { $('#dashboardFullLoader').hide(); } catch (e) { }
                     },
                     error: function (xhr) {
-                        console.error('Failed to load dashboard statistics', xhr);
+                        console.error('Dashboard load failed', xhr);
+                        try { $('#dashboardFullLoader').hide(); } catch (e) { }
                     }
                 });
             }
 
-            // initial load
-            loadStatistics();
+            // ========== Events ==========
+            loadDashboard();                          // First load
+
+            $('#jobSharePeriod').on('change', function () {
+                loadDashboard();                      // Period change pe bhi
+            });
+
+            // Auto refresh every 30 seconds
+            setInterval(loadDashboard, 30000);
         });
     </script>
 }

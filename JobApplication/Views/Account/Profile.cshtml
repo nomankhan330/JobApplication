@@ -20,95 +20,115 @@
                 <div class="card">
                     <div class="card-body">
                         <form id="profileForm" enctype="multipart/form-data">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label" for="UserId">
-                                        Username
-                                    </label>
-                                    <input type="text"
-                                           class="form-control"
-                                           id="UserId"
-                                           name="UserId"
-                                           readonly />
-                                </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label" for="UserName">
-                                        Full Name
-                                    </label>
-                                    <input type="text"
-                                           class="form-control"
-                                           id="UserName"
-                                           name="UserName"
-                                           required />
-                                </div>
+                            <!-- ==================== Personal Details Card ==================== -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-4">Personal Details</h5>
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label" for="Email">
-                                        Email
-                                    </label>
-                                    <input type="email"
-                                           class="form-control"
-                                           id="Email"
-                                           name="Email" />
-                                </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="UserId">Username</label>
+                                            <input type="text" class="form-control" id="UserId" name="UserId" readonly />
+                                        </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label" for="PhoneNo">
-                                        Phone Number
-                                    </label>
-                                    <input type="text"
-                                           class="form-control"
-                                           id="PhoneNo"
-                                           name="PhoneNo" />
-                                </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="UserName">Full Name</label>
+                                            <input type="text" class="form-control" id="UserName" name="UserName" required />
+                                        </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label" for="Cnic">
-                                        CNIC
-                                    </label>
-                                    <input type="text"
-                                           class="form-control"
-                                           id="Cnic"
-                                           name="Cnic" />
-                                </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="Email">Email</label>
+                                            <input type="email" class="form-control" id="Email" name="Email" />
+                                        </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label" for="Password">
-                                        New Password
-                                    </label>
-                                    <input type="password"
-                                           class="form-control"
-                                           id="Password"
-                                           name="Password"
-                                           autocomplete="new-password" />
-                                    <small class="text-muted">
-                                        Leave blank to keep the current password.
-                                    </small>
-                                </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="PhoneNo">Phone Number</label>
+                                            <input type="text" class="form-control" id="PhoneNo" name="PhoneNo" />
+                                        </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label" for="PhotoFile">
-                                        Profile Photo
-                                    </label>
-                                    <input type="file"
-                                           class="form-control"
-                                           id="PhotoFile"
-                                           name="PhotoFile"
-                                           accept="image/*" />
-                                </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="Cnic">CNIC</label>
+                                            <input type="text" class="form-control" id="Cnic" name="Cnic" />
+                                        </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <img id="PhotoPreview"
-                                         src=""
-                                         alt="Profile photo"
-                                         style="max-width:150px; display:none; border:1px solid #ccc; padding:5px; border-radius:5px;" />
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="Password">New Password</label>
+                                            <input type="password" class="form-control" id="Password" name="Password" autocomplete="new-password" />
+                                            <small class="text-muted">Leave blank to keep the current password.</small>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="PhotoFile">Profile Photo</label>
+                                            <input type="file" class="form-control" id="PhotoFile" name="PhotoFile" accept="image/*" />
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <img id="PhotoPreview"
+                                                 src=""
+                                                 alt="Profile photo"
+                                                 style="max-width:150px; display:none; border:1px solid #ccc; padding:5px; border-radius:5px;" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <button type="button"
-                                    id="btnUpdateProfile"
-                                    class="btn btn-primary">
+                            <!-- ==================== Company Details Card ==================== -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-4">Company Details</h5>
+
+                                    <div class="row">
+                                        <!-- Company Name -->
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Company Name (English)</label>
+                                            <input type="text" class="form-control" id="CompanyName" name="CompanyName" />
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Company Name (Arabic)</label>
+                                            <input type="text" class="form-control" id="CompanyNameAr" name="CompanyNameAr" dir="rtl" />
+                                        </div>
+
+                                        <!-- Establishment Name -->
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Establishment Name (English)</label>
+                                            <input type="text" class="form-control" id="EstablishmentName" name="EstablishmentName" />
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Establishment Name (Arabic)</label>
+                                            <input type="text" class="form-control" id="EstablishmentNameAr" name="EstablishmentNameAr" dir="rtl" />
+                                        </div>
+
+                                        <!-- Country -->
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Country (English)</label>
+                                            <input type="text" class="form-control" id="Country" name="Country" />
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Country (Arabic)</label>
+                                            <input type="text" class="form-control" id="CountryAr" name="CountryAr" dir="rtl" />
+                                        </div>
+
+                                        <!-- City -->
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">City (English)</label>
+                                            <input type="text" class="form-control" id="City" name="City" />
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">City (Arabic)</label>
+                                            <input type="text" class="form-control" id="CityAr" name="CityAr" dir="rtl" />
+                                        </div>
+
+                                        <!-- VAT Number -->
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">VAT Number</label>
+                                            <input type="text" class="form-control" id="Vatnumber" name="Vatnumber" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" id="btnUpdateProfile" class="btn btn-primary">
                                 Update Profile
                             </button>
                         </form>
@@ -210,6 +230,18 @@
                     $("#Email").val(user.Email || "");
                     $("#PhoneNo").val(user.PhoneNo|| "");
                     $("#Cnic").val(user.Cnic || "");
+
+
+                    // Company fields
+                    $("#CompanyName").val(user.CompanyName || "");
+                    $("#CompanyNameAr").val(user.CompanyNameAr || "");
+                    $("#EstablishmentName").val(user.EstablishmentName || "");
+                    $("#EstablishmentNameAr").val(user.EstablishmentNameAr || "");
+                    $("#Country").val(user.Country || "");
+                    $("#CountryAr").val(user.CountryAr || "");
+                    $("#City").val(user.City || "");
+                    $("#CityAr").val(user.CityAr || "");
+                    $("#Vatnumber").val(user.Vatnumber || "");
 
                     if (user.Photo) {
                         $("#PhotoPreview")

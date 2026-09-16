@@ -1,0 +1,225 @@
+@inject BusinessLogic.Interfaces.ISessionHelper SessionHelper
+@{
+    ViewData["Title"] = "Settings";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var t = (ViewBag.SettingType as string ?? "jobtype").ToLower();
+}
+
+@section Head {
+    <!-- DataTables -->
+    <link href="~/assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/libs/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+}
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- Start Page Title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Settings - @((t=="jobtype")?"Job Type":(t=="bltype")?"BL Type":(t=="containertype")?"Container Type":"Country")</h4>
+                </div>
+            </div>
+        </div>
+        <!-- End Page Title -->
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <div class="btn-group" role="group">
+                                    <a class="btn @(t=="jobtype"?"btn-primary":"btn-outline-secondary")" href="/Setting?type=jobtype">Job Type</a>
+                                    <a class="btn @(t=="bltype"?"btn-primary":"btn-outline-secondary")" href="/Setting?type=bltype">BL Type</a>
+                                    <a class="btn @(t=="containertype"?"btn-primary":"btn-outline-secondary")" href="/Setting?type=containertype">Container Type</a>
+                                    <a class="btn @(t=="country"?"btn-primary":"btn-outline-secondary")" href="/Setting?type=country">Country</a>
+                                    <a class="btn @(t=="paymentheader"?"btn-primary":"btn-outline-secondary")" href="/Setting?type=paymentheader">Payment Header</a>
+                                </div>
+                            </div>
+
+                            <div>
+                                <button id="btnAdd" class="btn btn-primary">Add New</button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered table-hover align-middle" id="tblSettings">
+                                <thead class="table-light">
+                                    @if(t == "paymentheader")
+                                    {
+                                        <tr id="tblHeaderRow">
+                                            <th style="width:60px" class="text-center">#</th>
+                                            <th id="hdrHeaders">Headers</th>
+                                            <th id="hdrHeadersAr">Headers (AR)</th>
+                                            <th id="hdrType" style="width:140px" class="text-center">Type</th>
+                                            <th id="hdrActive" style="width:120px" class="text-center">Active</th>
+                                            <th id="hdrActions" style="width:160px" class="text-center">Actions</th>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        <tr id="tblHeaderRow">
+                                            <th style="width:60px" class="text-center">#</th>
+                                            <th id="hdrName">Name</th>
+                                            <th id="hdrActive" style="width:120px" class="text-center">Active</th>
+                                            <th id="hdrActions" style="width:160px" class="text-center">Actions</th>
+                                        </tr>
+                                    }
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="itemId" />
+        <div id="groupName" class="mb-3">
+            <label>Name</label>
+            <input id="itemName" class="form-control" />
+        </div>
+
+        <div id="groupPaymentHeader" style="display:none;">
+            <div class="mb-3">
+                <label>Headers (EN)</label>
+                <input id="phHeaders" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label>Headers (AR)</label>
+                <input id="phHeadersAr" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label>Payment Type</label>
+                <select id="phPaymentType" class="form-select">
+                    <option value="">-- Select --</option>
+                    <option value="1">Official</option>
+                    <option value="2">UnOfficial</option>
+                </select>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="saveBtn" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Script {
+    <script src="~/assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="~/assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script>
+        $(function(){
+            var currentType = '@t';
+
+            var table = $('#tblSettings').DataTable({
+                processing: true,
+                serverSide: true,
+                searching: true,
+                lengthMenu: [10,25,50],
+                ajax: {
+                    url: '/Setting/GetItems',
+                    type: 'POST',
+                    data: function(d){ d.type = currentType; }
+                },
+                order: [[1, 'asc']],
+                columns: (function(){
+                    // always return 6 columns to match table header
+                    if(currentType === 'paymentheader'){
+                        return [
+                            { data: 'Id', orderable: true, searchable: false, className: 'text-center', render: function(data,type,row,meta){ return meta.row + meta.settings._iDisplayStart + 1; } },
+                            { data: 'Headers' },
+                            { data: 'HeadersAr' },
+                            { data: 'PaymentTypeId', className: 'text-center', orderable: false, render: function(d){ if(d==1) return 'Official'; if(d==2) return 'UnOfficial'; return ''; } },
+                            { data: 'IsActive', className: 'text-center', orderable: false, render: function(d){ return d? '<span class="badge bg-success">Active</span>':'<span class="badge bg-secondary">Inactive</span>'; } },
+                            { data: null, className: 'text-center', orderable: false, searchable: false, render: function(data){ var id = data.Id || data.Id; return '<button class="btn btn-sm btn-info me-1 editBtn" data-id="'+id+'">Edit</button><button class="btn btn-sm btn-warning toggleBtn" data-id="'+id+'">Toggle</button>'; } }
+                        ];
+                    }
+
+                    // non-paymentheader: match header (5 columns): index, Name, Type, Active, Actions
+                    return [
+                        { data: null, orderable: false, searchable: false, className: 'text-center', render: function(data,type,row,meta){ return meta.row + meta.settings._iDisplayStart + 1; } },
+                        { data: 'Name' },
+                        { data: 'IsActive', className: 'text-center', orderable: false, render: function(d){ return d? '<span class="badge bg-success">Active</span>':'<span class="badge bg-secondary">Inactive</span>'; } },
+                        { data: null, className: 'text-center', orderable: false, searchable: false, render: function(data){ var id = data.Id || data.id; return '<button class="btn btn-sm btn-info me-1 editBtn" data-id="'+id+'">Edit</button><button class="btn btn-sm btn-warning toggleBtn" data-id="'+id+'">Toggle</button>'; } }
+                    ];
+                })()
+            });
+
+            // handle edit click
+            $('#tblSettings tbody').on('click', '.editBtn', function(){
+                var id = $(this).data('id');
+                $.post('/Setting/GetById', { type: currentType, id: id }, function(res){
+                    if(res.success){
+                        var d = res.data || {};
+                        var idv = (typeof d.id !== 'undefined')? d.id : d.Id;
+                        $('#itemId').val(idv);
+                        if(currentType === 'paymentheader'){
+                            $('#groupName').hide();
+                            $('#groupPaymentHeader').show();
+                            $('#phHeaders').val(d.Headers || d.Headers || '');
+                            $('#phHeadersAr').val(d.HeadersAr || d.HeadersAr || '');
+                            $('#phVat').val(d.Vat || d.Vat || '');
+                            $('#phPaymentType').val(d.PaymentTypeId || d.PaymentTypeId || '');
+                        } else {
+                            $('#groupPaymentHeader').hide();
+                            $('#groupName').show();
+                            var name = (typeof d.name !== 'undefined')? d.name : d.Name || '';
+                            $('#itemName').val(name);
+                        }
+                        var m = new bootstrap.Modal(document.getElementById('editModal'));
+                        m.show();
+                    }
+                });
+            });
+
+            // handle toggle
+            $('#tblSettings tbody').on('click', '.toggleBtn', function(){
+                var id = $(this).data('id');
+                if(!confirm('Toggle status?')) return;
+                $.post('/Setting/ToggleStatus', { type: currentType, id: id }, function(){ table.ajax.reload(null,false); });
+            });
+
+            $('#btnAdd').on('click', function(){ $('#itemId').val(0); if(currentType === 'paymentheader'){ $('#groupName').hide(); $('#groupPaymentHeader').show(); $('#phHeaders').val(''); $('#phHeadersAr').val(''); $('#phVat').val(''); $('#phPaymentType').val(''); } else { $('#groupPaymentHeader').hide(); $('#groupName').show(); $('#itemName').val(''); } var m = new bootstrap.Modal(document.getElementById('editModal')); m.show(); });
+
+            $('#saveBtn').on('click', function(){
+                var id = $('#itemId').val() || 0;
+                if(currentType === 'paymentheader'){
+                    var headers = $('#phHeaders').val() || '';
+                    var headersAr = $('#phHeadersAr').val() || '';
+                    var vat = $('#phVat').val() || '';
+                    var paymentTypeId = $('#phPaymentType').val() || '';
+                    $.post('/Setting/SaveItem', { type: currentType, id: id, headers: headers, headersAr: headersAr, vat: vat, paymentTypeId: paymentTypeId }, function(res){
+                        if(res.success){ bootstrap.Modal.getInstance(document.getElementById('editModal')).hide(); table.ajax.reload(); }
+                        else alert(res.message || 'Error');
+                    });
+                } else {
+                    var name = $('#itemName').val() || '';
+                    $.post('/Setting/SaveItem', { type: currentType, id: id, name: name }, function(res){
+                        if(res.success){ bootstrap.Modal.getInstance(document.getElementById('editModal')).hide(); table.ajax.reload(); }
+                        else alert(res.message || 'Error');
+                    });
+                }
+            });
+
+        });
+    </script>
+}

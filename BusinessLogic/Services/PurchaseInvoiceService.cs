@@ -64,20 +64,20 @@ namespace BusinessLogic.Services
             try
             {
                 // Check Duplicate: Same Job ID + Same Service Provider/Vendor (Exclude current record if Editing)
-                var alreadyExists = await _context.Set<PurchaseInvoice>()
-                    .AnyAsync(x => x.JobId == model.JobId
-                                && x.ServiceProviderId == model.ServiceProviderId
-                                && (!isEdit || x.InvoiceId != model.InvoiceId));
+                //var alreadyExists = await _context.Set<PurchaseInvoice>()
+                //    .AnyAsync(x => x.JobId == model.JobId
+                //                && x.ServiceProviderId == model.ServiceProviderId
+                //                && (!isEdit || x.InvoiceId != model.InvoiceId));
 
-                if (alreadyExists)
-                {
-                    await transaction.RollbackAsync();
-                    return new
-                    {
-                        errorCode = 409,
-                        errorMessage = "An invoice for this Service Provider already exists against the selected Job."
-                    };
-                }
+                //if (alreadyExists)
+                //{
+                //    await transaction.RollbackAsync();
+                //    return new
+                //    {
+                //        errorCode = 409,
+                //        errorMessage = "An invoice for this Service Provider already exists against the selected Job."
+                //    };
+                //}
 
                 if (isEdit)
                 {
@@ -277,9 +277,9 @@ namespace BusinessLogic.Services
                 foreach (var item in details)
                 {
                     invoiceRows.AppendFormat(
-                        "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td><td>{8}</td></tr>",
+                        "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td></tr>",
                         sr++,
-                        item.PaymentType,
+                        //item.PaymentType,
                         item.InvoiceDetail,
                         item.Unit,
                         item.Qty,
@@ -862,9 +862,13 @@ namespace BusinessLogic.Services
                         inv.BalanceAmount,
                         inv.Status,
                         inv.IsCancelled,
+                        inv.ReferenceId,
                         StatusName = StatusHelper.GetInvoiceStatus(0),
                         CreatedByUser = u.UserName
                     };
+
+
+                query = query.Where(x => x.ReferenceId == _session.ReferenceId);
 
                 if (!string.IsNullOrEmpty(invoiceNo))
                     query = query.Where(x => x.InvoiceNo.Contains(invoiceNo));

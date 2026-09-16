@@ -19,6 +19,8 @@ public partial class PaymentReceived
 
     public string? BlNo { get; set; }
 
+    public int? ReferenceId { get; set; }
+
     public bool IsActive { get; set; }
 
     public int CreatedBy { get; set; }

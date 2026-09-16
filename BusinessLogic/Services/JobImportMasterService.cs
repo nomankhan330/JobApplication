@@ -811,8 +811,8 @@ namespace BusinessLogic.Services
                 from ss in ssJoin.DefaultIfEmpty()
 
                     // 🔥 IMPORTANT FIX (NO DUPLICATES)
-                where _context.UserCostCenters
-                    .Any(ucc => ucc.CostCenterId == jm.CostCenterId)
+                //where _context.UserCostCenters
+                //    .Any(ucc => ucc.CostCenterId == jm.CostCenterId)
 
                 select new
                 {
@@ -842,8 +842,11 @@ namespace BusinessLogic.Services
                     ContainerType = ct.Name,
                     ContainerNo = jm.ContainerNo,
                     ShipmentStatus = ss.Name,
-                    jm.CostCenterId
-                };
+                    jm.CostCenterId,
+
+                    // ← ADD THIS
+                    CreatedOn = jm.CreatedOn
+};
 
 
             // Display only records created by the logged-in user
@@ -867,16 +870,28 @@ namespace BusinessLogic.Services
                 query = query.Where(x => x.CreatedBy == uid);
             }
 
+            //if (!string.IsNullOrEmpty(fromDate))
+            //{
+            //    DateOnly from = DateOnly.Parse(fromDate);
+            //    query = query.Where(x => x.JobDate >= from);
+            //}
+
+            //if (!string.IsNullOrEmpty(toDate))
+            //{
+            //    DateOnly to = DateOnly.Parse(toDate);
+            //    query = query.Where(x => x.JobDate <= to);
+            //}
+
             if (!string.IsNullOrEmpty(fromDate))
             {
-                DateOnly from = DateOnly.Parse(fromDate);
-                query = query.Where(x => x.JobDate >= from);
+                DateTime from = DateTime.Parse(fromDate).Date;
+                query = query.Where(x => x.CreatedOn >= from);
             }
-
+    
             if (!string.IsNullOrEmpty(toDate))
             {
-                DateOnly to = DateOnly.Parse(toDate);
-                query = query.Where(x => x.JobDate <= to);
+                DateTime to = DateTime.Parse(toDate).Date.AddDays(1);
+                query = query.Where(x => x.CreatedOn < to);
             }
 
             if (!string.IsNullOrEmpty(blNumber))
@@ -1570,20 +1585,15 @@ namespace BusinessLogic.Services
                     POD = pod.Name,
                     ContainerType = ct.Name,
                     ContainerNo = jm.ContainerNo,
-
                     ETD = jm.Etd,
                     SIReceivedDate = jm.SiReceivedDate,
                     ManifestReceive = jm.ManifestReceivedDate,
-
                     ShipmentStatus = ss.Name,
                     SailedDate = jm.SailDate,
+                    TotalJobAmount = _context.JobImportPayments.Where(d => d.JobImportMasterId == jm.Id).Sum(d => (decimal?)d.Amount) ?? 0,
+                    Remarks = jm.Remarks,
                     ReferenceId = jm.ReferenceId,
-                    // TOTAL FROM INVOICE DETAILS
-                    TotalJobAmount = _context.JobImportPayments
-                        .Where(d => d.JobImportMasterId == jm.Id)
-                        .Sum(d => (decimal?)d.Amount) ?? 0,
-
-                    Remarks = jm.Remarks
+                    CreatedOn = jm.CreatedOn
                 };
 
             // FILTERS
@@ -1598,14 +1608,14 @@ namespace BusinessLogic.Services
 
             if (!string.IsNullOrEmpty(fromDate))
             {
-                DateOnly from = DateOnly.Parse(fromDate);
-                query = query.Where(x => x.JobDate >= from);
+                DateTime from = DateTime.Parse(fromDate).Date;
+                query = query.Where(x => x.CreatedOn >= from);
             }
 
             if (!string.IsNullOrEmpty(toDate))
             {
-                DateOnly to = DateOnly.Parse(toDate);
-                query = query.Where(x => x.JobDate <= to);
+                DateTime to = DateTime.Parse(toDate).Date.AddDays(1);
+                query = query.Where(x => x.CreatedOn < to);
             }
 
             if (!string.IsNullOrEmpty(blNumber))
@@ -1646,6 +1656,546 @@ namespace BusinessLogic.Services
                 data,
                 errorCode = 200
             };
+        }
+
+        #endregion
+
+        #region Dashboard
+
+        public async Task<int> CountJobs(IList<QueryFilters> filters)
+        {
+            string? userId = filters.FirstOrDefault(x => x.fieldName == "UserId")?.filterValue;
+            string? blNumber = filters.FirstOrDefault(x => x.fieldName == "BLNumber")?.filterValue;
+            string? fromDate = filters.FirstOrDefault(x => x.fieldName == "FromDate")?.filterValue;
+            string? toDate = filters.FirstOrDefault(x => x.fieldName == "ToDate")?.filterValue;
+            string? shipmentType = filters.FirstOrDefault(x => x.fieldName == "ShipmentType")?.filterValue;
+
+            var query = _context.JobImportMasters.AsQueryable();
+
+            // Same permission / cost center logic as GetJobs
+
+            query = query.Where(x => x.ReferenceId == _session.ReferenceId);
+
+            if (!string.IsNullOrEmpty(shipmentType))
+            {
+                int typeId = Convert.ToInt32(shipmentType);
+                query = query.Where(x => x.ShipmentType == typeId);
+            }
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                int uid = Convert.ToInt32(userId);
+                query = query.Where(x => x.CreatedBy == uid);
+            }
+            if (!string.IsNullOrEmpty(fromDate))
+            {
+                DateTime from = DateTime.Parse(fromDate).Date;
+                query = query.Where(x => x.CreatedOn >= from);
+            }
+
+            if (!string.IsNullOrEmpty(toDate))
+            {
+                DateTime to = DateTime.Parse(toDate).Date.AddDays(1);
+                query = query.Where(x => x.CreatedOn < to);
+            }
+
+            if (!string.IsNullOrEmpty(blNumber))
+                query = query.Where(x => x.BlNo.Contains(blNumber));
+
+            // Cost Center restriction
+            var allowedCostCenters = new List<int>();
+            string costCenterIds = _session.CostCenterIds;
+
+            if (!string.IsNullOrEmpty(costCenterIds))
+            {
+                allowedCostCenters = costCenterIds
+                    .Split(',')
+                    .Select(x => Convert.ToInt32(x))
+                    .ToList();
+            }
+
+            if (_session.UserType != 1 && _session.UserType != 2)
+            {
+                query = query.Where(x => allowedCostCenters.Contains(x.CostCenterId));
+            }
+
+            // Same "UserCostCenters" check that was in original query
+            //query = query.Where(jm =>
+            //    _context.UserCostCenters.Any(ucc => ucc.CostCenterId == jm.CostCenterId));
+
+
+            return await query.CountAsync();
+        }
+
+        public async Task<FinancialStatisticsDto> GetFinancialStatisticsAsync(DateTime currentStart, DateTime currentEnd, DateTime prevStart, DateTime prevEnd)
+        {
+            var refId = _session.ReferenceId;
+
+            // 1. Sales (Current + Prev in 1 DB Query)
+            var salesData = await _context.SalesInvoices
+                .Where(x => x.ReferenceId == refId
+                         && (x.IsCancelled == null || x.IsCancelled == false)
+                         && ((x.InvoiceDate >= currentStart && x.InvoiceDate <= currentEnd) ||
+                             (x.InvoiceDate >= prevStart && x.InvoiceDate <= prevEnd)))
+                .GroupBy(x => 1)
+                .Select(g => new
+                {
+                    Current = g.Where(x => x.InvoiceDate >= currentStart && x.InvoiceDate <= currentEnd).Sum(x => (decimal?)x.GrandTotal) ?? 0,
+                    Prev = g.Where(x => x.InvoiceDate >= prevStart && x.InvoiceDate <= prevEnd).Sum(x => (decimal?)x.GrandTotal) ?? 0
+                })
+                .FirstOrDefaultAsync();
+
+            // 2. Purchases & Outstanding (1 DB Query)
+            var purchaseData = await _context.PurchaseInvoices
+                .Where(x => x.ReferenceId == refId
+                         && (x.IsCancelled == null || x.IsCancelled == false))
+                .GroupBy(x => 1)
+                .Select(g => new
+                {
+                    Outstanding = g.Sum(x => (decimal?)((x.BalanceAmount == null || x.BalanceAmount == 0) ? x.GrandTotal : x.BalanceAmount.Value)) ?? 0,
+                    Current = g.Where(x => x.InvoiceDate >= currentStart && x.InvoiceDate <= currentEnd)
+                               .Sum(x => (decimal?)((x.BalanceAmount == null || x.BalanceAmount == 0) ? x.GrandTotal : x.BalanceAmount.Value)) ?? 0,
+                    Prev = g.Where(x => x.InvoiceDate >= prevStart && x.InvoiceDate <= prevEnd)
+                            .Sum(x => (decimal?)((x.BalanceAmount == null || x.BalanceAmount == 0) ? x.GrandTotal : x.BalanceAmount.Value)) ?? 0
+                })
+                .FirstOrDefaultAsync();
+
+            // 3. Payment Receiveds (1 DB Query)
+            var receivedData = await _context.PaymentReceiveds
+                .Where(x => x.ReferenceId == refId && x.IsActive
+                         && ((x.PaymentDate >= currentStart && x.PaymentDate <= currentEnd) ||
+                             (x.PaymentDate >= prevStart && x.PaymentDate <= prevEnd)))
+                .GroupBy(x => 1)
+                .Select(g => new
+                {
+                    Current = g.Where(x => x.PaymentDate >= currentStart && x.PaymentDate <= currentEnd).Sum(x => (decimal?)x.Amount) ?? 0,
+                    Prev = g.Where(x => x.PaymentDate >= prevStart && x.PaymentDate <= prevEnd).Sum(x => (decimal?)x.Amount) ?? 0
+                })
+                .FirstOrDefaultAsync();
+
+            // 4. Purchase Vouchers (1 DB Query)
+            var paidData = await _context.PurchaseVouchers
+                .Where(x => x.ReferenceId == refId && x.IsActive
+                         && ((x.PaymentDate >= currentStart && x.PaymentDate <= currentEnd) ||
+                             (x.PaymentDate >= prevStart && x.PaymentDate <= prevEnd)))
+                .GroupBy(x => 1)
+                .Select(g => new
+                {
+                    Current = g.Where(x => x.PaymentDate >= currentStart && x.PaymentDate <= currentEnd).Sum(x => (decimal?)x.Amount) ?? 0,
+                    Prev = g.Where(x => x.PaymentDate >= prevStart && x.PaymentDate <= prevEnd).Sum(x => (decimal?)x.Amount) ?? 0
+                })
+                .FirstOrDefaultAsync();
+
+            decimal netCashCurrent = (receivedData?.Current ?? 0) - (paidData?.Current ?? 0);
+            decimal netCashPrev = (receivedData?.Prev ?? 0) - (paidData?.Prev ?? 0);
+
+            return new FinancialStatisticsDto
+            {
+                SalesRevenue = salesData?.Current ?? 0,
+                SalesRevenuePrevious = salesData?.Prev ?? 0,
+                SpOutstanding = purchaseData?.Outstanding ?? 0,
+                PurchaseCurrent = purchaseData?.Current ?? 0,
+                PurchasePrevious = purchaseData?.Prev ?? 0,
+                NetCashInflow = netCashCurrent,
+                NetCashInflowPrevious = netCashPrev
+            };
+        }
+
+        public async Task<FinancialStatisticsDto> GetFinancialStatisticsAsync_Bk2(DateTime currentStart, DateTime currentEnd, DateTime prevStart, DateTime prevEnd)
+        {
+            var refId = _session.ReferenceId;
+
+            // 1. Sales Revenue
+            var salesCurrentTask = _context.SalesInvoices
+                .Where(x => x.ReferenceId == refId
+                         && x.InvoiceDate >= currentStart && x.InvoiceDate <= currentEnd
+                         && (x.IsCancelled == null || x.IsCancelled == false))
+                .SumAsync(x => (decimal?)x.GrandTotal);
+
+            var salesPrevTask = _context.SalesInvoices
+                .Where(x => x.ReferenceId == refId
+                         && x.InvoiceDate >= prevStart && x.InvoiceDate <= prevEnd
+                         && (x.IsCancelled == null || x.IsCancelled == false))
+                .SumAsync(x => (decimal?)x.GrandTotal);
+
+            // 2. SP Outstanding & Purchases
+            var spOutstandingTask = _context.PurchaseInvoices
+                .Where(x => x.ReferenceId == refId
+                         && (x.IsCancelled == null || x.IsCancelled == false))
+                .SumAsync(x => (decimal?)(
+                    (x.BalanceAmount == null || x.BalanceAmount == 0)
+                        ? x.GrandTotal
+                        : x.BalanceAmount.Value
+                ));
+
+            var purchaseCurrentTask = _context.PurchaseInvoices
+                .Where(x => x.ReferenceId == refId
+                         && x.InvoiceDate >= currentStart && x.InvoiceDate <= currentEnd
+                         && (x.IsCancelled == null || x.IsCancelled == false))
+                .SumAsync(x => (decimal?)(
+                    (x.BalanceAmount == null || x.BalanceAmount == 0)
+                        ? x.GrandTotal
+                        : x.BalanceAmount.Value
+                ));
+
+            var purchasePrevTask = _context.PurchaseInvoices
+                .Where(x => x.ReferenceId == refId
+                         && x.InvoiceDate >= prevStart && x.InvoiceDate <= prevEnd
+                         && (x.IsCancelled == null || x.IsCancelled == false))
+                .SumAsync(x => (decimal?)(
+                    (x.BalanceAmount == null || x.BalanceAmount == 0)
+                        ? x.GrandTotal
+                        : x.BalanceAmount.Value
+                ));
+
+            // 3. Net Cash Inflow (Received & Paid)
+            var receivedCurrentTask = _context.PaymentReceiveds
+                .Where(x => x.ReferenceId == refId
+                         && x.PaymentDate >= currentStart && x.PaymentDate <= currentEnd
+                         && x.IsActive)
+                .SumAsync(x => (decimal?)x.Amount);
+
+            var paidCurrentTask = _context.PurchaseVouchers
+                .Where(x => x.ReferenceId == refId
+                         && x.PaymentDate >= currentStart && x.PaymentDate <= currentEnd
+                         && x.IsActive)
+                .SumAsync(x => (decimal?)x.Amount);
+
+            var receivedPrevTask = _context.PaymentReceiveds
+                .Where(x => x.ReferenceId == refId
+                         && x.PaymentDate >= prevStart && x.PaymentDate <= prevEnd
+                         && x.IsActive)
+                .SumAsync(x => (decimal?)x.Amount);
+
+            var paidPrevTask = _context.PurchaseVouchers
+                .Where(x => x.ReferenceId == refId
+                         && x.PaymentDate >= prevStart && x.PaymentDate <= prevEnd
+                         && x.IsActive)
+                .SumAsync(x => (decimal?)x.Amount);
+
+            // Execute all queries asynchronously
+            await Task.WhenAll(
+                salesCurrentTask, salesPrevTask,
+                spOutstandingTask, purchaseCurrentTask, purchasePrevTask,
+                receivedCurrentTask, paidCurrentTask, receivedPrevTask, paidPrevTask
+            );
+
+            // Results mapping
+            decimal salesCurrent = await salesCurrentTask ?? 0;
+            decimal salesPrev = await salesPrevTask ?? 0;
+            decimal spOutstanding = await spOutstandingTask ?? 0;
+            decimal purchaseCurrent = await purchaseCurrentTask ?? 0;
+            decimal purchasePrev = await purchasePrevTask ?? 0;
+
+            decimal receivedCurrent = await receivedCurrentTask ?? 0;
+            decimal paidCurrent = await paidCurrentTask ?? 0;
+            decimal netCashCurrent = receivedCurrent - paidCurrent;
+
+            decimal receivedPrev = await receivedPrevTask ?? 0;
+            decimal paidPrev = await paidPrevTask ?? 0;
+            decimal netCashPrev = receivedPrev - paidPrev;
+
+            return new FinancialStatisticsDto
+            {
+                SalesRevenue = salesCurrent,
+                SalesRevenuePrevious = salesPrev,
+                SpOutstanding = spOutstanding,
+                PurchaseCurrent = purchaseCurrent,
+                PurchasePrevious = purchasePrev,
+                NetCashInflow = netCashCurrent,
+                NetCashInflowPrevious = netCashPrev
+            };
+        }
+
+        public async Task<FinancialStatisticsDto> GetFinancialStatisticsAsync_Bk(DateTime currentStart, DateTime currentEnd, DateTime prevStart, DateTime prevEnd)
+        {
+            // 1. Sales Revenue
+            decimal salesCurrent = await _context.SalesInvoices
+                .Where(x => x.InvoiceDate >= currentStart && x.InvoiceDate <= currentEnd
+                         && (x.IsCancelled == null || x.IsCancelled == false))
+                .SumAsync(x => (decimal?)x.GrandTotal) ?? 0;
+
+            decimal salesPrev = await _context.SalesInvoices
+                .Where(x => x.InvoiceDate >= prevStart && x.InvoiceDate <= prevEnd
+                         && (x.IsCancelled == null || x.IsCancelled == false))
+                .SumAsync(x => (decimal?)x.GrandTotal) ?? 0;
+
+            // 2. SP Outstanding
+            // Logic: BalanceAmount = 0 (ya null) → GrandTotal, warna BalanceAmount
+            decimal spOutstanding = await _context.PurchaseInvoices
+                .Where(x => x.IsCancelled == null || x.IsCancelled == false)
+                .SumAsync(x => (decimal?)(
+                    (x.BalanceAmount == null || x.BalanceAmount == 0)
+                        ? x.GrandTotal
+                        : x.BalanceAmount.Value
+                )) ?? 0;
+
+            // For trend of SP (this month vs previous month) - same BalanceAmount logic
+            decimal purchaseCurrent = await _context.PurchaseInvoices
+                .Where(x => x.InvoiceDate >= currentStart && x.InvoiceDate <= currentEnd
+                         && (x.IsCancelled == null || x.IsCancelled == false))
+                .SumAsync(x => (decimal?)(
+                    (x.BalanceAmount == null || x.BalanceAmount == 0)
+                        ? x.GrandTotal
+                        : x.BalanceAmount.Value
+                )) ?? 0;
+
+            decimal purchasePrev = await _context.PurchaseInvoices
+                .Where(x => x.InvoiceDate >= prevStart && x.InvoiceDate <= prevEnd
+                         && (x.IsCancelled == null || x.IsCancelled == false))
+                .SumAsync(x => (decimal?)(
+                    (x.BalanceAmount == null || x.BalanceAmount == 0)
+                        ? x.GrandTotal
+                        : x.BalanceAmount.Value
+                )) ?? 0;
+
+            // 3. Net Cash Inflow = Received - Paid
+            decimal receivedCurrent = await _context.PaymentReceiveds
+                .Where(x => x.PaymentDate >= currentStart && x.PaymentDate <= currentEnd && x.IsActive)
+                .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+            decimal paidCurrent = await _context.PurchaseVouchers
+                .Where(x => x.PaymentDate >= currentStart && x.PaymentDate <= currentEnd && x.IsActive)
+                .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+            decimal netCashCurrent = receivedCurrent - paidCurrent;
+
+            decimal receivedPrev = await _context.PaymentReceiveds
+                .Where(x => x.PaymentDate >= prevStart && x.PaymentDate <= prevEnd && x.IsActive)
+                .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+            decimal paidPrev = await _context.PurchaseVouchers
+                .Where(x => x.PaymentDate >= prevStart && x.PaymentDate <= prevEnd && x.IsActive)
+                .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+            decimal netCashPrev = receivedPrev - paidPrev;
+
+            return new FinancialStatisticsDto
+            {
+                SalesRevenue = salesCurrent,
+                SalesRevenuePrevious = salesPrev,
+                SpOutstanding = spOutstanding,
+                PurchaseCurrent = purchaseCurrent,
+                PurchasePrevious = purchasePrev,
+                NetCashInflow = netCashCurrent,
+                NetCashInflowPrevious = netCashPrev
+            };
+        }
+
+        public async Task<List<RecentInvoiceDto>> GetRecentInvoicesAsync(int take = 10)
+        {
+            var refId = _session.ReferenceId;
+
+            // 1. Sales Invoices Queryable
+            var salesQuery = from inv in _context.SalesInvoices
+                             join cust in _context.Customers on inv.CustomerId equals cust.Id into custJoin
+                             from cust in custJoin.DefaultIfEmpty()
+
+                             join job in _context.JobImportMasters on inv.JobId equals job.Id into jobJoin
+                             from job in jobJoin.DefaultIfEmpty()
+
+                             where inv.ReferenceId == refId
+                             select new
+                             {
+                                 InvoiceDate = inv.InvoiceDate,
+                                 Dto = new RecentInvoiceDto
+                                 {
+                                     InvoiceNo = inv.InvoiceNo,
+                                     JobNo = job.JobNumber,
+                                     PartyName = cust.CustomerName,
+                                     Type = "Sales",
+                                     BLNumber = job.BlNo,
+                                     GrandTotal = inv.GrandTotal,
+                                     Status = inv.Status
+                                 }
+                             };
+
+            // 2. Purchase Invoices Queryable
+            var purchaseQuery = from inv in _context.PurchaseInvoices
+                                join cust in _context.Customers on inv.ServiceProviderId equals cust.Id into custJoin
+                                from cust in custJoin.DefaultIfEmpty()
+
+                                join job in _context.JobImportMasters on inv.JobId equals job.Id into jobJoin
+                                from job in jobJoin.DefaultIfEmpty()
+
+                                where inv.ReferenceId == refId
+                                select new
+                                {
+                                    InvoiceDate = inv.InvoiceDate,
+                                    Dto = new RecentInvoiceDto
+                                    {
+                                        InvoiceNo = inv.InvoiceNo,
+                                        JobNo = job.JobNumber,
+                                        PartyName = cust.CustomerName ?? inv.ServiceProviderName,
+                                        Type = "Purchase",
+                                        BLNumber = job.BlNo,
+                                        GrandTotal = inv.GrandTotal,
+                                        Status = inv.Status
+                                    }
+                                };
+
+            // 3. Union, Global OrderByDate & Fetch Top Records in a Single Query
+            return await salesQuery.Concat(purchaseQuery)
+                                   .OrderByDescending(x => x.InvoiceDate)
+                                   .Take(take)
+                                   .Select(x => x.Dto)
+                                   .ToListAsync();
+        }
+
+        public async Task<List<RecentInvoiceDto>> GetRecentInvoicesAsync_Bk(int take = 10)
+        {
+            // ==================== Sales Invoices ====================
+            var sales = await (from inv in _context.SalesInvoices
+                               join cust in _context.Customers on inv.CustomerId equals cust.Id into custJoin
+                               from cust in custJoin.DefaultIfEmpty()
+
+                               join job in _context.JobImportMasters on inv.JobId equals job.Id into jobJoin
+                               from job in jobJoin.DefaultIfEmpty()
+
+                               orderby inv.InvoiceDate descending
+                               select new RecentInvoiceDto
+                               {
+                                   InvoiceNo = inv.InvoiceNo,
+                                   JobNo = job.JobNumber,
+                                   PartyName = cust.CustomerName,   // fallback
+                                   Type = "Sales",
+                                   BLNumber = job.BlNo,
+                                   GrandTotal = inv.GrandTotal,
+                                   Status = inv.Status
+                               })
+                               .Take(take)
+                               .ToListAsync();
+
+            // ==================== Purchase Invoices ====================
+            var purchases = await (from inv in _context.PurchaseInvoices
+                                   join cust in _context.Customers on inv.ServiceProviderId equals cust.Id into custJoin
+                                   from cust in custJoin.DefaultIfEmpty()
+
+                                   join job in _context.JobImportMasters on inv.JobId equals job.Id into jobJoin
+                                   from job in jobJoin.DefaultIfEmpty()
+
+                                   orderby inv.InvoiceDate descending
+                                   select new RecentInvoiceDto
+                                   {
+                                       InvoiceNo = inv.InvoiceNo,
+                                       JobNo = job.JobNumber,
+                                       PartyName = cust.CustomerName != null ? cust.CustomerName : inv.ServiceProviderName,
+                                       Type = "Purchase",
+                                       BLNumber = job.BlNo,
+                                       GrandTotal = inv.GrandTotal,
+                                       Status = inv.Status
+                                   })
+                                   .Take(take)
+                                   .ToListAsync();
+
+            // ==================== Merge & Take Latest ====================
+            return sales.Concat(purchases)
+                        .OrderByDescending(x => x.InvoiceNo)   // better: InvoiceDate se order karo agar possible ho
+                        .Take(take)
+                        .ToList();
+        }
+
+        public async Task<List<JobOperationsShareDto>> GetJobOperationsShareAsync(string period = "ThisMonth")
+        {
+            var refId = _session.ReferenceId;
+            var now = DateTime.Now;
+            DateTime fromDate, toDate;
+
+            if (period == "LastMonth")
+            {
+                fromDate = new DateTime(now.Year, now.Month, 1).AddMonths(-1);
+                toDate = new DateTime(now.Year, now.Month, 1).AddDays(-1);
+            }
+            else if (period == "ThisYear")
+            {
+                fromDate = new DateTime(now.Year, 1, 1);
+                toDate = now;
+            }
+            else // ThisMonth
+            {
+                fromDate = new DateTime(now.Year, now.Month, 1);
+                toDate = now;
+            }
+
+            // JobImportMaster + JobTypes join with ReferenceId filter
+            var data = await (from job in _context.JobImportMasters
+                              join type in _context.JobTypes
+                                   on job.JobTypeId equals type.Id into typeJoin
+                              from type in typeJoin.DefaultIfEmpty()
+
+                              where job.ReferenceId == refId
+                                 && job.CreatedOn >= fromDate
+                                 && job.CreatedOn <= toDate
+
+                              group job by (type != null ? type.Name : "Unknown") into g
+                              select new
+                              {
+                                  Label = g.Key,
+                                  Count = g.Count()
+                              })
+                              .ToListAsync();
+
+            int total = data.Sum(x => x.Count);
+            if (total == 0) total = 1;
+
+            return data.Select(x => new JobOperationsShareDto
+            {
+                Label = x.Label,
+                Count = x.Count,
+                Percentage = Math.Round((decimal)x.Count / total * 100, 1)
+            })
+            .OrderByDescending(x => x.Percentage)
+            .ToList();
+        }
+
+        public async Task<List<JobOperationsShareDto>> GetJobOperationsShareAsync_Bk(string period = "ThisMonth")
+        {
+            DateTime fromDate, toDate;
+            var now = DateTime.Now;
+
+            if (period == "LastMonth")
+            {
+                fromDate = new DateTime(now.Year, now.Month, 1).AddMonths(-1);
+                toDate = new DateTime(now.Year, now.Month, 1).AddDays(-1);
+            }
+            else if (period == "ThisYear")
+            {
+                fromDate = new DateTime(now.Year, 1, 1);
+                toDate = now;
+            }
+            else // ThisMonth
+            {
+                fromDate = new DateTime(now.Year, now.Month, 1);
+                toDate = now;
+            }
+
+            // JobImportMaster + JobTypes join
+            var data = await (from job in _context.JobImportMasters
+                              join type in _context.JobTypes
+                                   on job.JobTypeId equals type.Id into typeJoin
+                              from type in typeJoin.DefaultIfEmpty()
+
+                              where job.CreatedOn >= fromDate && job.CreatedOn <= toDate
+
+                              group job by (type != null ? type.Name : "Unknown") into g
+                              select new
+                              {
+                                  Label = g.Key,
+                                  Count = g.Count()
+                              })
+                              .ToListAsync();
+
+            int total = data.Sum(x => x.Count);
+            if (total == 0) total = 1;
+
+            return data.Select(x => new JobOperationsShareDto
+            {
+                Label = x.Label,
+                Count = x.Count,
+                Percentage = Math.Round((decimal)x.Count / total * 100, 1)
+            })
+            .OrderByDescending(x => x.Percentage)
+            .ToList();
         }
 
         #endregion

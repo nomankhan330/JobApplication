@@ -15,21 +15,21 @@ namespace JobApplication.Controllers
         private readonly IAccount _account;
 
         public ReportController(
-    IJobImportMaster jobImportMaster,
-    ICostCenter costCenter,
-    ISalesInvoice salesInvoice,
-    IPurchaseInvoice purchaseInvoice,
-    IAccount account,
-    ISessionHelper session)
-    : base(session)
-{
-    _jobimportmaster = jobImportMaster;
-    _costCenter = costCenter;
-    _salesInvoice = salesInvoice;
-    _purchaseInvoice = purchaseInvoice;
-    _account = account;
-    _session = session;
-}
+            IJobImportMaster jobImportMaster,
+            ICostCenter costCenter,
+            ISalesInvoice salesInvoice,
+            IPurchaseInvoice purchaseInvoice,
+            IAccount account,
+            ISessionHelper session)
+            : base(session)
+        {
+            _jobimportmaster = jobImportMaster;
+            _costCenter = costCenter;
+            _salesInvoice = salesInvoice;
+            _purchaseInvoice = purchaseInvoice;
+            _account = account;
+            _session = session;
+        }
 
         public IActionResult CostCenter()
         {

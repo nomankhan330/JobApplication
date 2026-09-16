@@ -1083,7 +1083,11 @@ background:rgba(0,0,0,0.4); z-index:9999; text-align:center; padding-top:20%;">
                         );
 
                         $('.customer-address').text(customer.Address);
-                        $('.customer-region-country').text(customer.RegionName + ', ' + customer.CountryName);
+                        $('.customer-region-country').text(
+                            [customer.RegionName, customer.CountryName]
+                                .filter(x => x && x.trim() !== '')
+                                .join(', ')
+                        );
                         $('.customer-vatid').text(customer.VatId);
 
                         //alert("Service Provider data loaded successfully!");
