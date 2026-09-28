@@ -825,13 +825,6 @@ namespace BusinessLogic.Services
                     CreatedBy = jm.CreatedBy,
                     CostCenter = cc.CostCenterName,
 
-                    // optional: if you still want assigned user
-                    AssignedUser = _context.Users
-                        .Where(u => _context.UserCostCenters
-                            .Any(x => x.UserId == u.Id && x.CostCenterId == jm.CostCenterId))
-                        .Select(u => u.UserName)
-                        .FirstOrDefault(),
-
                     CustomerName = c.CustomerName,
                     Carrier = jm.Carrier,
                     JobDate = jm.JobDate,
@@ -1556,10 +1549,7 @@ namespace BusinessLogic.Services
 
                     JobNo = jm.JobNumber,
                     jm.CreatedBy,
-                    AssignedUser = _context.Users
-                        .Where(u => u.Id == jm.CreatedBy)
-                        .Select(u => u.UserName)
-                        .FirstOrDefault(),
+                    AssignedUser = creator != null ? creator.UserName : "",
 
                     // ✅ MULTI COST CENTER FIX
                     CostCenter = string.Join(", ",

@@ -12,4 +12,9 @@ namespace BusinessLogic.Models
         public string password { get; set; }
         public int companyid { get; set; }
     }
+
+    public class TwoFactorCodeRequest
+    {
+        public string code { get; set; }
+    }
 }

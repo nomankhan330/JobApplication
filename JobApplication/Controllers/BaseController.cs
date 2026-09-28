@@ -43,6 +43,31 @@ public class BaseController : Controller
             return;
         }
 
+        // Lock screen check: jab screen locked ho, sirf Lock/LockScreen/Unlock/Logout actions allowed hain
+        if (_sessions.IsLocked)
+        {
+            string controllerName = context.RouteData.Values["controller"]?.ToString() ?? "";
+            string actionName = context.RouteData.Values["action"]?.ToString() ?? "";
+
+            bool isLockAllowed = controllerName == "Account" &&
+                (actionName == "Lock" || actionName == "LockScreen" || actionName == "Unlock" || actionName == "logout");
+
+            if (!isLockAllowed)
+            {
+                bool isAjaxRequest = context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+                if (isAjaxRequest)
+                {
+                    context.Result = new StatusCodeResult(401);
+                }
+                else
+                {
+                    context.Result = new RedirectToActionResult("LockScreen", "Account", null);
+                }
+                return;
+            }
+        }
+
         base.OnActionExecuting(context);
     }
 }

@@ -60,4 +60,22 @@ public partial class User
     public string? CityAr { get; set; }
 
     public string? Vatnumber { get; set; }
+
+    public string? AccountNo { get; set; }
+
+    public string? AccountTitle { get; set; }
+
+    public string? BankName { get; set; }
+
+    public string? Branch { get; set; }
+
+    public string? SwiftCode { get; set; }
+
+    public string? Iban { get; set; }
+
+    public bool TwoFactorEnabled { get; set; }
+
+    public string? TwoFactorSecretKey { get; set; }
+
+    public string? TwoFactorRecoveryCodes { get; set; }
 }

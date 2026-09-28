@@ -1,0 +1,424 @@
+@{
+    Layout = null;
+}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+    <title>Two-Factor Authentication | C & F Management System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="C & F Management System" name="description" />
+    <meta content="Themesdesign" name="author" />
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="~/assets/images/favicon.ico">
+
+    <!-- Bootstrap Css -->
+    <link href="~/assets/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
+    <!-- Icons Css -->
+    <link href="~/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <!-- App Css-->
+    <link href="~/assets/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
+    <!-- Toastr Css-->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" asp-append-version="true" />
+    <style>
+        .otp-box {
+            width: 46px;
+            height: 52px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+        }
+        .otp-box:focus {
+            border-color: #5369f8;
+            box-shadow: 0 0 0 0.15rem rgba(83, 105, 248, 0.25);
+        }
+    </style>
+</head>
+
+<body class="auth-body-bg">
+    <div class="bg-overlay"></div>
+    <div class="wrapper-page">
+        <div class="container-fluid p-0">
+            <div class="card">
+                <div class="card-body">
+
+                    <div class="text-center" style="margin-bottom: -45px;">
+                        <div class="mb-3">
+                            <a href="#" class="auth-logo">
+                                <img src="~/assets/images/logo-dark.png" height="200" class="logo-dark mx-auto" alt="">
+                                <img src="~/assets/images/logo-dark.png" height="30" class="logo-light mx-auto" alt="">
+                            </a>
+                        </div>
+                    </div>
+
+                    <h4 class="text-muted text-center font-size-18"><b>Two-Factor Authentication</b></h4>
+
+                    @* ---------------- Enrolled: enter verification code ---------------- *@
+                    <div class="p-3" id="verifySection">
+                        <form class="form-horizontal mt-3" id="verify-form">
+                            <div class="form-group mb-3 row" id="totpBoxes">
+                                <div class="col-12 d-flex justify-content-center">
+                                    <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="otp1" />
+                                    <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="otp2" />
+                                    <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="otp3" />
+                                    <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="otp4" />
+                                    <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="otp5" />
+                                    <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="otp6" />
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-3 row" id="recoveryInputBox" style="display:none;">
+                                <div class="col-12">
+                                    <input class="form-control text-center" type="text" placeholder="Enter your recovery code" id="verify-code" maxlength="32" autocomplete="off" />
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-3 text-center row mt-3 pt-1">
+                                <div class="col-12">
+                                    <button class="btn btn-info w-100 waves-effect waves-light" id="btnVerify">Verify & Sign In</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-0 row mt-2">
+                                <div class="col-sm-7">
+                                    <a href="#" class="text-muted" id="btnUseRecovery"><i class="mdi mdi-key"></i> Use a recovery code</a>
+                                </div>
+                                <div class="col-sm-5 text-end">
+                                    <a href="/Home/Login" class="text-muted"><i class="mdi mdi-logout"></i> Back to login</a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    @* ---------------- Not enrolled: onboarding / setup ---------------- *@
+                    <div class="p-3" id="setupSection" style="display:none;">
+                        <p class="text-muted text-center font-size-14 mb-3">
+                            Scan this QR code with your authenticator app
+                            (Google Authenticator, Microsoft Authenticator, Aegis, etc.)
+                        </p>
+
+                        <div class="text-center mb-3">
+                            <div id="qrBox" class="d-inline-block p-2 border rounded">
+                                <img src="~/assets/images/logo-dark.png" height="150" alt="QR Code" id="qrImage" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Manual setup key</label>
+                            <input class="form-control text-center" type="text" id="secretKey" readonly onclick="this.select();" />
+                        </div>
+
+                        <div class="form-group mb-3 row" id="setupTotpBoxes">
+                            <div class="col-12 d-flex justify-content-center">
+                                <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="setupOtp1" />
+                                <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="setupOtp2" />
+                                <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="setupOtp3" />
+                                <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="setupOtp4" />
+                                <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="setupOtp5" />
+                                <input class="form-control otp-box mx-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="setupOtp6" />
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3 text-center row mt-3 pt-1">
+                            <div class="col-12">
+                                <button class="btn btn-success w-100 waves-effect waves-light" id="btnEnable">Confirm & Enable 2FA</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ---------------- Recovery codes display after enable ---------------- *@
+                    <div class="p-3" id="recoverySection" style="display:none;">
+                        <div class="alert alert-warning">
+                            Save these recovery codes in a safe place. You can use any one of them to sign in if you lose your authenticator app. Each code can only be used once.
+                        </div>
+                        <div id="recoveryCodes" class="d-flex flex-wrap justify-content-center mb-3"></div>
+                        <div class="form-group mb-3 text-center row mt-3 pt-1">
+                            <div class="col-12">
+                                <button class="btn btn-info w-100 waves-effect waves-light" id="btnFinish">I've saved my codes. Continue</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top">
+                        <span class="text-muted">&copy; 2026 MZ Solutions Pvt. Ltd. All rights reserved.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="position: fixed; bottom: 20px; right: 30px; z-index: 999; color: rgba(255,255,255,.95); font-weight: 600; font-size: .95rem; text-shadow: 0 1px 3px rgba(0,0,0,.85);">
+        Designed and developed by MZ Solutions.
+    </div>
+
+    <script src="~/assets/libs/jquery/jquery.min.js"></script>
+    <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/libs/metismenu/metisMenu.min.js"></script>
+    <script src="~/assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="~/assets/libs/node-waves/waves.min.js"></script>
+    <script src="~/assets/js/app.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js" asp-append-version="true"></script>
+
+    <script>
+        var lastVerifiedCode = null;
+        var isRecoveryMode = false;
+
+        $().ready(function () {
+            loadStatus();
+
+            bindOtpBoxes("#totpBoxes", function (code) { verifyCode(code); });
+            bindOtpBoxes("#setupTotpBoxes", function (code) { enableTwoFactor(code); });
+        });
+
+        function loadStatus() {
+            $.ajax({
+                url: '/Account/TwoFactorStatus',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({}),
+                success: function (data) {
+                    if (data.errorCode !== 200) {
+                        showMessage(data.errorMessage, "error");
+                        return;
+                    }
+
+                    if (data.enabled === true) {
+                        $("#verifySection").show();
+                        $("#otp1").focus();
+                    } else {
+                        startSetup();
+                    }
+                },
+                error: function () {
+                    showMessage("Unable to load 2FA status", "error");
+                }
+            });
+        }
+
+        function startSetup() {
+            $("#setupSection").show();
+            $.ajax({
+                url: '/Account/GenerateTwoFactorSecret',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({}),
+                success: function (data) {
+                    if (data.errorCode !== 200) {
+                        showMessage(data.errorMessage, "error");
+                        return;
+                    }
+                    $("#qrImage").attr("src", data.qr);
+                    $("#secretKey").val(data.secret);
+                    $("#setupOtp1").focus();
+                },
+                error: function () {
+                    showMessage("Unable to generate 2FA secret", "error");
+                }
+            });
+        }
+
+        $("#btnUseRecovery").on("click", function () {
+            isRecoveryMode = !isRecoveryMode;
+            if (isRecoveryMode) {
+                $("#totpBoxes").hide();
+                $("#recoveryInputBox").show();
+                $("#verify-code").val("").focus();
+                $("#btnUseRecovery").html('<i class="mdi mdi-key"></i> Use authenticator code');
+            } else {
+                $("#recoveryInputBox").hide();
+                $("#totpBoxes").show();
+                $("#otp1").val("").focus();
+                $("#btnUseRecovery").html('<i class="mdi mdi-key"></i> Use a recovery code');
+            }
+        });
+
+        $("#verify-form").on('submit', function (e) {
+            e.preventDefault();
+            verifyCode(collectedCode());
+        });
+
+        $("#btnVerify").on("click", function () {
+            verifyCode(collectedCode());
+        });
+
+        $("#btnEnable").on("click", function () {
+            enableTwoFactor(otpValue("#setupTotpBoxes"));
+        });
+
+        function collectedCode() {
+            if (isRecoveryMode) {
+                return ($("#verify-code").val() || "").trim();
+            }
+            return otpValue("#totpBoxes");
+        }
+
+        function enableTwoFactor(code) {
+            code = (code || "").trim();
+            if (!code) {
+                showMessage("Please enter the verification code", "error");
+                return;
+            }
+
+            var $btn = $("#btnEnable");
+            $btn.prop("disabled", true).text("Please Wait...");
+
+            $.ajax({
+                url: '/Account/EnableTwoFactor',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ code: code }),
+                success: function (data) {
+                    if (data.errorCode !== 200) {
+                        showMessage(data.errorMessage, "error");
+                        $btn.prop("disabled", false).text("Confirm & Enable 2FA");
+                        return;
+                    }
+
+                    lastVerifiedCode = code;
+
+                    $("#setupSection").hide();
+                    $("#recoverySection").show();
+
+                    var list = data.recoveryCodes || [];
+                    var html = "";
+                    list.forEach(function (c) {
+                        html += '<span class="badge bg-light text-dark font-size-14 border me-2 mb-2" style="font-family: monospace; padding: 8px 12px;">' + c + '</span>';
+                    });
+                    $("#recoveryCodes").html(html);
+                },
+                error: function () {
+                    showMessage("An error occurred while enabling 2FA", "error");
+                    $btn.prop("disabled", false).text("Confirm & Enable 2FA");
+                }
+            });
+        }
+
+        $("#btnFinish").on("click", function () {
+            verifyCode(lastVerifiedCode);
+        });
+
+        function verifyCode(code) {
+            code = (code || "").trim();
+            if (!code) {
+                showMessage("Please enter the verification code", "error");
+                return;
+            }
+
+            var $btn = $("#btnVerify");
+            $btn.prop("disabled", true).text("Verifying...");
+
+            $.ajax({
+                url: '/Account/VerifyTwoFactor',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ code: code }),
+                success: function (data) {
+                    if (data.errorCode !== 200) {
+                        showMessage(data.errorMessage || "Invalid verification code", "error");
+                        $btn.prop("disabled", false).text("Verify & Sign In");
+                        return;
+                    }
+
+                    showMessage("Login successfully!", "success");
+
+                    var target = data.data == 1 ? "/Account/AdminUsers" : "/Dashboard/Index";
+                    setTimeout(function () {
+                        window.location = target;
+                    }, 800);
+                },
+                error: function () {
+                    showMessage("An error occurred", "error");
+                    $btn.prop("disabled", false).text("Verify & Sign In");
+                }
+            });
+        }
+
+        function bindOtpBoxes(container, onSubmit) {
+            var $boxes = $(container).find(".otp-box");
+
+            $boxes.on("input", function () {
+                var val = String($(this).val()).replace(/[^0-9]/g, "").slice(-1);
+                $(this).val(val);
+
+                if (val) {
+                    var $next = $(this).next(".otp-box");
+                    if ($next.length) {
+                        $next.focus();
+                    }
+                }
+                checkOtpComplete(container, onSubmit);
+            });
+
+            $boxes.on("keydown", function (e) {
+                if (e.key === "Backspace" && !$(this).val()) {
+                    var $prev = $(this).prev(".otp-box");
+                    if ($prev.length) {
+                        $prev.val("").focus();
+                    }
+                }
+            });
+
+            $boxes.on("paste", function (e) {
+                e.preventDefault();
+                var text = (e.originalEvent.clipboardData || window.clipboardData).getData("text") || "";
+                var digits = text.replace(/[^0-9]/g, "").split("").slice(0, $boxes.length);
+
+                $boxes.each(function (i) {
+                    $(this).val(digits[i] || "");
+                });
+
+                if (digits.length === $boxes.length) {
+                    onSubmit(digits.join(""));
+                } else if (digits.length) {
+                    $boxes.eq(digits.length).focus();
+                }
+            });
+
+            $boxes.on("focus", function () {
+                $(this).select();
+            });
+        }
+
+        function otpValue(container) {
+            var v = "";
+            $(container).find(".otp-box").each(function () {
+                v += $(this).val() || "";
+            });
+            return v;
+        }
+
+        function checkOtpComplete(container, onSubmit) {
+            var $boxes = $(container).find(".otp-box");
+            var filled = 0;
+            $boxes.each(function () {
+                if ($(this).val()) {
+                    filled++;
+                }
+            });
+            if (filled === $boxes.length) {
+                onSubmit(otpValue(container));
+            }
+        }
+
+        function showMessage(Message, type) {
+            toastr.options = {
+                positionClass: 'toast-top-right',
+                toastClass: 'custom-toastr',
+                closeMethod: 'fadeout',
+                timeOut: 2000
+            };
+            if (type == "info")
+                toastr.info(Message);
+            else if (type == "success")
+                toastr.success(Message);
+            else if (type == "error")
+                toastr.error(Message);
+        }
+    </script>
+</body>
+</html>

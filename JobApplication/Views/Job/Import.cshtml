@@ -242,7 +242,7 @@
                         searchable: false,
                         className: "text-center",
                         render: function (data, type, row) {
-                            if (typeof loginType !== 'undefined' && loginType != '3') {
+                            if (typeof loginType !== 'undefined' && loginType != '1' && loginType != '3') {
                                 return `<a href="/Job/AddImport/${row.Id}" class="btn btn-sm btn-primary"><i class="fas fa-edit me-1"></i> Edit</a>`;
                             }
                             return `<a href="javascript:void(0);" onclick="openJobDetails(${row.Id})" class="btn btn-sm btn-info"><i class="fas fa-eye me-1"></i> Details</a>`;

@@ -51,6 +51,36 @@ namespace BusinessLogic.Services
             _converter = converter;
         }
 
+        private async Task<string> GetQrCodeHtml(User user, dynamic inv)
+        {
+            try
+            {
+                var setting = await _context.Settings
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.SettingKey == "EnableInvoiceQRCode");
+
+                if (setting?.IsActive != true) return "";
+
+                if (!ZatcaQrHelper.IsValidTrn(user.Vatnumber)) return "";
+
+                var invoiceDate = Convert.ToDateTime(inv.InvoiceDate);
+                var grandTotal = inv.GrandTotal ?? 0;
+                var vatAmount = inv.VatAmount ?? 0;
+
+                return ZatcaQrHelper.GenerateQrImageTag(
+                    user.CompanyName ?? "",
+                    user.Vatnumber ?? "",
+                    invoiceDate,
+                    Convert.ToDecimal(grandTotal),
+                    Convert.ToDecimal(vatAmount)
+                );
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
         public async Task<dynamic> Save(SalesInvoiceVM model, int loginId)
         {
             bool isEdit = model.InvoiceId > 0;
@@ -252,7 +282,7 @@ namespace BusinessLogic.Services
                 var details = data.details;
 
                 var basePath = Directory.GetCurrentDirectory();
-                var filePath = Path.Combine(basePath, "wwwroot", "templates", "pdf", "salesinvoice.html");
+                var filePath = Path.Combine(basePath, "wwwroot", "templates", "pdf", "salesinvoicenew.html");
                 var fullHtml = await File.ReadAllTextAsync(filePath);
 
                 var invoiceRows = new StringBuilder();
@@ -299,27 +329,34 @@ namespace BusinessLogic.Services
                     .Replace("{{VAT}}", inv.VatAmount?.ToString("N2") ?? "0")
                     .Replace("{{GrandTotal}}", inv.GrandTotal?.ToString("N2") ?? "0")
                     .Replace("{{AmountInWords}}", inv.AmountInWords ?? "")
-                    .Replace("{{AccountNo}}", inv.AccountNumber ?? "")
-                    .Replace("{{BankName}}", inv.BankName ?? "")
-                    .Replace("{{IBAN}}", inv.IBAN ?? "")
+
+
+                    .Replace("{{AccountNo}}", user.AccountNo ?? "")
+                    .Replace("{{AccountTitle}}", user.AccountTitle ?? "")
+                    .Replace("{{BankName}}", user.BankName ?? "")
+                    .Replace("{{Branch}}", user.Branch ?? "")
+                    .Replace("{{SwiftCode}}", user.SwiftCode ?? "")
+                    .Replace("{{Iban}}", user.Iban ?? "")
+
+
                     .Replace("{{PrintDate}}", DateTime.Now.ToString("dd-MMM-yyyy hh:mm tt"))
-                    .Replace("{{QRCodeValue}}", "");
+                    .Replace("{{QRCodeValue}}", await GetQrCodeHtml(user, inv));
 
-                var pdfBytes = GeneratePdfFromHtml(fullHtml);
-                var pdfFolder = Path.Combine(basePath, "wwwroot", "pdfs", "invoice");
+                    var pdfBytes = GeneratePdfFromHtml(fullHtml);
+                    var pdfFolder = Path.Combine(basePath, "wwwroot", "pdfs", "invoice");
 
-                if (!Directory.Exists(pdfFolder)) Directory.CreateDirectory(pdfFolder);
+                    if (!Directory.Exists(pdfFolder)) Directory.CreateDirectory(pdfFolder);
 
-                var pdfPath = Path.Combine(pdfFolder, $"{invoice.InvoiceNo}.pdf");
-                await File.WriteAllBytesAsync(pdfPath, pdfBytes);
+                    var pdfPath = Path.Combine(pdfFolder, $"{invoice.InvoiceNo}.pdf");
+                    await File.WriteAllBytesAsync(pdfPath, pdfBytes);
 
-                return new
-                {
-                    errorCode = 200,
-                    message = isEdit ? "Invoice Updated Successfully" : "Invoice Saved Successfully",
-                    invoiceId = invoice.InvoiceId,
-                    invoiceNo = invoice.InvoiceNo
-                };
+                    return new
+                    {
+                        errorCode = 200,
+                        message = isEdit ? "Invoice Updated Successfully" : "Invoice Saved Successfully",
+                        invoiceId = invoice.InvoiceId,
+                        invoiceNo = invoice.InvoiceNo
+                    };
             }
             catch (Exception ex)
             {
@@ -544,7 +581,7 @@ namespace BusinessLogic.Services
                     .Replace("{{BankName}}", inv.BankName ?? "")
                     .Replace("{{IBAN}}", inv.IBAN ?? "")
                     .Replace("{{PrintDate}}", DateTime.Now.ToString("dd-MMM-yyyy hh:mm tt"))
-                    .Replace("{{QRCodeValue}}", "");
+                    .Replace("{{QRCodeValue}}", await GetQrCodeHtml(user, inv));
 
                 // PDF FILE SAVING
                 var pdfBytes = GeneratePdfFromHtml(fullHtml);
@@ -773,7 +810,7 @@ namespace BusinessLogic.Services
 
                 // OTHER DETAILS
                 fullHtml = fullHtml.Replace("{{PrintDate}}", DateTime.Now.ToString("dd-MMM-yyyy hh:mm tt"));
-                fullHtml = fullHtml.Replace("{{QRCodeValue}}", "");
+                fullHtml = fullHtml.Replace("{{QRCodeValue}}", await GetQrCodeHtml(user, inv));
 
                 // COMPANY DETAILS
 
@@ -956,7 +993,231 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<dynamic> GetInvoiceById(int invoiceId)
+        private async Task<List<dynamic>> GetExportData(IList<QueryFilters> filters)
+        {
+            string invoiceNo = filters.FirstOrDefault(x => x.fieldName == "InvoiceNo")?.filterValue?.ToString();
+
+            int jobId = 0;
+            int.TryParse(filters.FirstOrDefault(x => x.fieldName == "JobNo")?.filterValue, out jobId);
+
+            int customerId = 0;
+            int.TryParse(filters.FirstOrDefault(x => x.fieldName == "CustomerId")?.filterValue, out customerId);
+
+            DateTime? fromDate = null;
+            DateTime? toDate = null;
+
+            if (DateTime.TryParse(filters.FirstOrDefault(x => x.fieldName == "FromDate")?.filterValue, out DateTime f))
+                fromDate = f;
+
+            if (DateTime.TryParse(filters.FirstOrDefault(x => x.fieldName == "ToDate")?.filterValue, out DateTime t))
+                toDate = t;
+
+            var query =
+                from inv in _context.SalesInvoices
+
+                join c in _context.Customers
+                    on inv.CustomerId equals c.Id into custJoin
+                from c in custJoin.DefaultIfEmpty()
+
+                join jm in _context.JobImportMasters
+                    on inv.JobId equals jm.Id into jobJoin
+                from jm in jobJoin.DefaultIfEmpty()
+
+                join u in _context.Users
+                    on inv.CreatedBy equals u.Id into userJoin
+                from u in userJoin.DefaultIfEmpty()
+
+                select new
+                {
+                    inv.InvoiceId,
+                    inv.InvoiceNo,
+                    JobId = inv.JobId,
+                    JobNo = jm.JobNumber,
+                    CustomerId = inv.CustomerId,
+                    CustomerName = c.CustomerName,
+                    inv.InvoiceDate,
+                    inv.NetAmount,
+                    inv.VatAmount,
+                    inv.GrandTotal,
+                    inv.PaidAmount,
+                    inv.BalanceAmount,
+                    inv.Status,
+                    StatusName = StatusHelper.GetInvoiceStatus(inv.Status),
+                    CreatedByUser = u.UserName,
+                    inv.ReferenceId
+                };
+
+            query = query.Where(x => x.ReferenceId == _session.ReferenceId);
+
+            if (!string.IsNullOrEmpty(invoiceNo))
+                query = query.Where(x => x.InvoiceNo.Contains(invoiceNo));
+
+            if (jobId > 0)
+                query = query.Where(x => x.JobId == jobId);
+
+            if (customerId > 0)
+                query = query.Where(x => x.CustomerId == customerId);
+
+            if (fromDate.HasValue)
+                query = query.Where(x => x.InvoiceDate >= fromDate);
+
+            if (toDate.HasValue)
+                query = query.Where(x => x.InvoiceDate <= toDate);
+
+            var rows = await query
+                .OrderByDescending(x => x.InvoiceId)
+                .ToListAsync();
+
+            return rows.Cast<dynamic>().ToList();
+        }
+
+        public async Task<byte[]> ExportExcel(IList<QueryFilters> filters)
+        {
+            var rows = await GetExportData(filters);
+
+            using (var workbook = new XLWorkbook())
+            {
+                var ws = workbook.Worksheets.Add("Sales Invoices");
+
+                var navyColor = XLColor.FromHtml("#1F4E78");
+
+                ws.Cell("A1").Value = "SALES INVOICE REPORT";
+                ws.Cell("A1").Style.Font.SetBold().Font.SetFontSize(16).Font.SetFontColor(navyColor);
+
+                string[] headers = {
+                    "Invoice No", "Job No", "Customer", "Invoice Date",
+                    "Net Amount", "VAT", "Grand Total", "Paid Amount", "Balance",
+                    "Status", "Created By"
+                };
+
+                var headerRange = ws.Range(3, 1, 3, headers.Length);
+                headerRange.Style.Font.SetBold().Font.SetFontColor(XLColor.White).Fill.SetBackgroundColor(navyColor);
+                headerRange.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+
+                for (int i = 0; i < headers.Length; i++)
+                    ws.Cell(3, i + 1).Value = headers[i];
+
+                int row = 4;
+
+                foreach (var r in rows)
+                {
+                    ws.Cell(row, 1).Value = r.InvoiceNo;
+                    ws.Cell(row, 2).Value = r.JobNo;
+                    ws.Cell(row, 3).Value = r.CustomerName;
+                    ws.Cell(row, 4).Value = ((DateTime)r.InvoiceDate).ToString("dd/MM/yyyy");
+                    ws.Cell(row, 5).Value = (decimal)r.NetAmount;
+                    ws.Cell(row, 6).Value = (decimal)r.VatAmount;
+                    ws.Cell(row, 7).Value = (decimal)r.GrandTotal;
+                    ws.Cell(row, 8).Value = (decimal)(r.PaidAmount ?? 0m);
+                    ws.Cell(row, 9).Value = (decimal)(r.BalanceAmount ?? 0m);
+                    ws.Cell(row, 10).Value = r.StatusName;
+                    ws.Cell(row, 11).Value = r.CreatedByUser;
+
+                    for (int c = 5; c <= 9; c++)
+                        ws.Cell(row, c).Style.NumberFormat.Format = "#,##0.00";
+
+                    row++;
+                }
+
+                ws.Columns().AdjustToContents(5, 50);
+                ws.SheetView.FreezeRows(3);
+
+                using (var ms = new MemoryStream())
+                {
+                    workbook.SaveAs(ms);
+                    return ms.ToArray();
+                }
+            }
+        }
+
+        public async Task<byte[]> ExportPdf(IList<QueryFilters> filters)
+        {
+            var rows = await GetExportData(filters);
+
+            var sb = new StringBuilder();
+
+            sb.AppendLine("<!DOCTYPE html><html><head><meta charset='utf-8'/>");
+            sb.AppendLine("<style>");
+            sb.AppendLine("body{font-family:'Segoe UI',Arial,sans-serif;font-size:9px;color:#212529;}");
+            sb.AppendLine("h2{color:#1F4E78;margin:0 0 4px 0;}");
+            sb.AppendLine(".filter-line{font-size:9px;color:#595959;margin-bottom:12px;}");
+            sb.AppendLine("table{width:100%;border-collapse:collapse;}");
+            sb.AppendLine("th,td{border:1px solid #999;padding:4px 6px;text-align:left;}");
+            sb.AppendLine("th{background:#1F4E78;color:#fff;font-weight:bold;}");
+            sb.AppendLine("tr:nth-child(even){background:#F9FAFB;}");
+            sb.AppendLine(".text-end{text-align:right;}");
+            sb.AppendLine("</style></head><body>");
+
+            sb.AppendLine("<h2>SALES INVOICE REPORT</h2>");
+
+            sb.AppendLine("<table><thead><tr>");
+            sb.AppendLine("<th>Invoice No</th><th>Job No</th><th>Customer</th><th>Invoice Date</th>");
+            sb.AppendLine("<th class='text-end'>Net Amount</th><th class='text-end'>VAT</th><th class='text-end'>Grand Total</th>");
+            sb.AppendLine("<th class='text-end'>Paid Amount</th><th class='text-end'>Balance</th><th>Status</th><th>Created By</th>");
+            sb.AppendLine("</tr></thead><tbody>");
+
+            decimal totalNet = 0, totalVat = 0, totalGrand = 0, totalPaid = 0;
+
+            foreach (var r in rows)
+            {
+                sb.Append("<tr>");
+                sb.Append($"<td>{r.InvoiceNo}</td>");
+                sb.Append($"<td>{r.JobNo}</td>");
+                sb.Append($"<td>{r.CustomerName}</td>");
+                sb.Append($"<td>{((DateTime)r.InvoiceDate).ToString("dd/MM/yyyy")}</td>");
+                sb.Append($"<td class='text-end'>{((decimal)r.NetAmount):N2}</td>");
+                sb.Append($"<td class='text-end'>{((decimal)r.VatAmount):N2}</td>");
+                sb.Append($"<td class='text-end'>{((decimal)r.GrandTotal):N2}</td>");
+                sb.Append($"<td class='text-end'>{((decimal)(r.PaidAmount ?? 0m)):N2}</td>");
+                sb.Append($"<td class='text-end'>{((decimal)(r.BalanceAmount ?? 0m)):N2}</td>");
+                sb.Append($"<td>{r.StatusName}</td>");
+                sb.Append($"<td>{r.CreatedByUser}</td>");
+                sb.Append("</tr>");
+
+                totalNet += (decimal)r.NetAmount;
+                totalVat += (decimal)r.VatAmount;
+                totalGrand += (decimal)r.GrandTotal;
+                totalPaid += (decimal)(r.PaidAmount ?? 0m);
+            }
+
+            sb.Append("<tr style='font-weight:bold;background:#EAEEF3;'>");
+            sb.Append("<td colspan='4'>TOTAL</td>");
+            sb.Append($"<td class='text-end'>{totalNet:N2}</td>");
+            sb.Append($"<td class='text-end'>{totalVat:N2}</td>");
+            sb.Append($"<td class='text-end'>{totalGrand:N2}</td>");
+            sb.Append($"<td class='text-end'>{totalPaid:N2}</td>");
+            sb.Append("<td></td><td></td><td></td>");
+            sb.Append("</tr>");
+
+            sb.AppendLine("</tbody></table></body></html>");
+
+            var doc = new HtmlToPdfDocument
+            {
+                GlobalSettings =
+                {
+                    PaperSize = PaperKind.A4,
+                    Orientation = Orientation.Landscape,
+                    Margins = { Top = 8, Bottom = 8, Left = 5, Right = 5 }
+                },
+                Objects =
+                {
+                    new ObjectSettings
+                    {
+                        HtmlContent = sb.ToString(),
+                        WebSettings =
+                        {
+                            DefaultEncoding = "utf-8",
+                            LoadImages = true,
+                            PrintMediaType = true
+                        }
+                    }
+                }
+            };
+
+            return _converter.Convert(doc);
+        }
+
+        public async Task<dynamic> GetInvoiceById(int invoiceId, int? ReferenceId = null)
         {
             try
             {
@@ -1102,7 +1363,7 @@ namespace BusinessLogic.Services
 
                 var user = await _context.Users
                             .AsNoTracking()
-                            .FirstOrDefaultAsync(x => x.ReferenceId == _session.ReferenceId);
+                            .FirstOrDefaultAsync(x => x.ReferenceId == (ReferenceId ?? _session.ReferenceId));
 
                 if (user == null)
                 {
@@ -1124,7 +1385,13 @@ namespace BusinessLogic.Services
                         user.CountryAr,
                         user.City,
                         user.CityAr,
-                        user.Vatnumber
+                        user.Vatnumber,
+                        user.AccountNo,
+                        user.AccountTitle,
+                        user.BankName,
+                        user.Branch,
+                        user.SwiftCode,
+                        user.Iban
                     }
                 };
             }
@@ -1137,6 +1404,155 @@ namespace BusinessLogic.Services
                         ex.InnerException?.Message ?? ex.Message
                 };
             }
+        }
+
+        public async Task<dynamic> RegenerateInvoices(DateTime? fromDate, DateTime? toDate)
+        {
+            try
+            {
+                var from = fromDate?.Date;
+                var toExclusive = toDate?.Date.AddDays(1);
+
+                var invoices = await _context.SalesInvoices
+                    .AsNoTracking()
+                    .Where(x => x.IsCancelled == null || x.IsCancelled == false)
+                    .Where(x => !from.HasValue || x.InvoiceDate == null || x.InvoiceDate >= from.Value)
+                    .Where(x => !toExclusive.HasValue || x.InvoiceDate == null || x.InvoiceDate < toExclusive.Value)
+                    .OrderBy(x => x.InvoiceId)
+                    .Select(x => new { x.InvoiceId, x.InvoiceNo, x.ReferenceId })
+                    .ToListAsync();
+
+                int successCount = 0;
+                var failures = new List<string>();
+
+                foreach (var row in invoices)
+                {
+                    try
+                    {
+                        int? referenceId = row.ReferenceId ?? _session.ReferenceId;
+
+                        var invoiceData = await GetInvoiceById(row.InvoiceId, referenceId);
+                        dynamic data = invoiceData;
+
+                        if (data.errorCode != 200)
+                        {
+                            failures.Add($"{row.InvoiceNo}: {data.errorMessage}");
+                            continue;
+                        }
+
+                        var user = await _context.Users
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(x => x.ReferenceId == referenceId);
+
+                        if (user == null)
+                        {
+                            failures.Add($"{row.InvoiceNo}: Company user not found");
+                            continue;
+                        }
+
+                        await RegenerateSingleSalesInvoicePdf(data, user, row.InvoiceNo);
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logs.Write("SalesInvoice", "RegenerateInvoices", $"{row.InvoiceNo} - {ex}");
+                        failures.Add($"{row.InvoiceNo}: {ex.InnerException?.Message ?? ex.Message}");
+                    }
+                }
+
+                return new
+                {
+                    errorCode = 200,
+                    message = "Sales invoice regeneration completed",
+                    total = invoices.Count,
+                    successCount,
+                    failureCount = failures.Count,
+                    failures
+                };
+            }
+            catch (Exception ex)
+            {
+                _logs.Write("SalesInvoice", "RegenerateInvoices", ex.ToString());
+                return new
+                {
+                    errorCode = 500,
+                    errorMessage = ex.InnerException?.Message ?? ex.Message
+                };
+            }
+        }
+
+        private async Task RegenerateSingleSalesInvoicePdf(dynamic invoiceData, User user, string invoiceNo)
+        {
+            dynamic data = invoiceData;
+            var inv = data.invoice;
+            var details = data.details;
+
+            if (inv == null) throw new Exception("Invoice data not found");
+
+            var basePath = Directory.GetCurrentDirectory();
+            var filePath = Path.Combine(basePath, "wwwroot", "templates", "pdf", "salesinvoicenew.html");
+            var fullHtml = await File.ReadAllTextAsync(filePath);
+
+            var invoiceRows = new StringBuilder();
+            int sr = 1;
+
+            foreach (var item in details)
+            {
+                invoiceRows.AppendFormat(
+                    "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td><td>{8}</td></tr>",
+                    sr++, item.PaymentType, item.InvoiceDetail, item.Unit, item.Qty, item.Rate, item.Amount, item.VatAmount, item.TotalAmount
+                );
+            }
+
+            fullHtml = fullHtml
+                .Replace("{{CompanyName}}", user.CompanyName ?? "")
+                .Replace("{{CompanyNameAr}}", user.CompanyNameAr ?? "")
+                .Replace("{{EstablishmentName}}", user.EstablishmentName ?? "")
+                .Replace("{{EstablishmentNameAr}}", user.EstablishmentNameAr ?? "")
+                .Replace("{{Country}}", user.Country ?? "")
+                .Replace("{{CountryAr}}", user.CountryAr ?? "")
+                .Replace("{{City}}", user.City ?? "")
+                .Replace("{{CityAr}}", user.CityAr ?? "")
+                .Replace("{{VATNumber}}", user.Vatnumber ?? "")
+                .Replace("{{InvoiceNo}}", inv.InvoiceNo ?? "")
+                .Replace("{{InvoiceDate}}", Convert.ToDateTime(inv.InvoiceDate).ToString("dd-MMM-yyyy"))
+                .Replace("{{InvoiceStatus}}", StatusHelper.GetInvoiceStatus(inv.Status) ?? "")
+                .Replace("{{CustomerName}}", inv.CustomerName ?? "")
+                .Replace("{{CustomerNameAr}}", inv.CustomerNameAr ?? "")
+                .Replace("{{CustomerAddress}}", inv.CustomerAddress ?? "")
+                .Replace("{{CustomerCity}}", $"{inv.RegionName} {inv.CountryName}")
+                .Replace("{{CustomerVAT}}", inv.CustomerVat ?? "")
+                .Replace("{{JobNumber}}", inv.JobNumber ?? "")
+                .Replace("{{ModeOfShipment}}", inv.ModeOfShipment ?? "")
+                .Replace("{{ShipmentType}}", inv.ShipmentType ?? "")
+                .Replace("{{POL}}", inv.POL ?? "")
+                .Replace("{{POD}}", inv.POD ?? "")
+                .Replace("{{BLNumber}}", inv.BLNumber ?? "")
+                .Replace("{{PaymentTerms}}", "")
+                .Replace("{{InvoiceRows}}", invoiceRows.ToString())
+                .Replace("{{Total}}", inv.TotalAmount?.ToString("N2") ?? "0")
+                .Replace("{{Advance}}", inv.Advance?.ToString("N2") ?? "0")
+                .Replace("{{Discount}}", inv.Discount?.ToString("N2") ?? "0")
+                .Replace("{{NetAmount}}", inv.NetAmount?.ToString("N2") ?? "0")
+                .Replace("{{VAT}}", inv.VatAmount?.ToString("N2") ?? "0")
+                .Replace("{{GrandTotal}}", inv.GrandTotal?.ToString("N2") ?? "0")
+                .Replace("{{AmountInWords}}", inv.AmountInWords ?? "")
+                .Replace("{{AccountNo}}", user.AccountNo ?? "")
+                .Replace("{{AccountTitle}}", user.AccountTitle ?? "")
+                .Replace("{{BankName}}", user.BankName ?? "")
+                .Replace("{{Branch}}", user.Branch ?? "")
+                .Replace("{{SwiftCode}}", user.SwiftCode ?? "")
+                .Replace("{{Iban}}", user.Iban ?? "")
+                .Replace("{{PrintDate}}", DateTime.Now.ToString("dd-MMM-yyyy hh:mm tt"))
+                .Replace("{{QRCodeValue}}", await GetQrCodeHtml(user, inv));
+
+            var pdfBytes = GeneratePdfFromHtml(fullHtml);
+            var pdfFolder = Path.Combine(basePath, "wwwroot", "pdfs", "invoice");
+
+            if (!Directory.Exists(pdfFolder)) Directory.CreateDirectory(pdfFolder);
+
+            var pdfPath = Path.Combine(pdfFolder, $"{invoiceNo}.pdf");
+            await File.WriteAllBytesAsync(pdfPath, pdfBytes);
         }
 
         public async Task<dynamic> EditSalesInvoice(int invoiceId)
@@ -1387,6 +1803,29 @@ namespace BusinessLogic.Services
 
                     transaction.Commit();
 
+                    // Regenerate PDF so the updated status/paid/balance is reflected
+                    try
+                    {
+                        var invoiceData = await GetInvoiceById(invoice.InvoiceId);
+                        dynamic data = invoiceData;
+
+                        if (data.errorCode == 200)
+                        {
+                            var user = await _context.Users
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync(x => x.ReferenceId == _session.ReferenceId);
+
+                            if (user != null)
+                            {
+                                await RegenerateSingleSalesInvoicePdf(data, user, invoice.InvoiceNo!);
+                            }
+                        }
+                    }
+                    catch (Exception pdfEx)
+                    {
+                        _logs.Write("SalesInvoice", "SavePaymentReceived_PdfRegenerate", pdfEx.ToString());
+                    }
+
                     return new
                     {
                         errorCode = 200,
@@ -1415,6 +1854,54 @@ namespace BusinessLogic.Services
             }
         }
 
+        public async Task<dynamic> GetPaymentHistory(int invoiceId)
+        {
+            try
+            {
+                var invoice = await _context.SalesInvoices
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.InvoiceId == invoiceId);
+
+                if (invoice == null)
+                {
+                    return new { errorCode = 404, data = "Invoice not found" };
+                }
+
+                var payments = await (from p in _context.PaymentReceiveds
+                                      join u in _context.Users on p.CreatedBy equals u.Id into pu
+                                      from user in pu.DefaultIfEmpty()
+                                      where p.InvoiceId == invoiceId && p.IsActive
+                                      orderby p.PaymentDate ascending, p.Id ascending
+                                      select new
+                                      {
+                                          p.Id,
+                                          p.Rvnumber,
+                                          p.PaymentDate,
+                                          p.Amount,
+                                          p.PaymentMode,
+                                          p.BlNo,
+                                          p.CreatedOn,
+                                          CreatedByName = user != null ? user.UserName : null
+                                      }).ToListAsync();
+
+                return new
+                {
+                    errorCode = 200,
+                    invoiceNo = invoice.InvoiceNo,
+                    paidAmount = invoice.PaidAmount,
+                    balanceAmount = invoice.BalanceAmount,
+                    totalReceived = payments.Count,
+                    data = payments
+                };
+            }
+            catch (Exception ex)
+            {
+                _logs.Write("SalesInvoice", "GetPaymentHistory", ex.InnerException?.Message ?? ex.Message);
+
+                return new { errorCode = 999, data = ex.Message };
+            }
+        }
+
         public async Task<dynamic> GetSalesReport(IList<QueryFilters> filters)
         {
             int draw = Convert.ToInt32(filters.FirstOrDefault(x => x.fieldName == "draw")?.filterValue ?? "0");
@@ -1431,6 +1918,7 @@ namespace BusinessLogic.Services
 
             SqlParameter[] parameters =
             {
+                new SqlParameter("@ReferenceId", _session.ReferenceId > 0 ? (object)_session.ReferenceId : DBNull.Value),
                 new SqlParameter("@CostCenterId", string.IsNullOrEmpty(costCenterId) ? DBNull.Value : costCenterId),
                 new SqlParameter("@FromDate", string.IsNullOrEmpty(fromDate) ? DBNull.Value : fromDate),
                 new SqlParameter("@ToDate", string.IsNullOrEmpty(toDate) ? DBNull.Value : toDate),
@@ -1517,6 +2005,92 @@ namespace BusinessLogic.Services
                 recordsTotal = totalRecords,
                 recordsFiltered = totalRecords,
                 data,
+                errorCode = 200
+            };
+        }
+
+        public async Task<dynamic> GetAgingReport(IList<QueryFilters> filters)
+        {
+            int draw = Convert.ToInt32(filters.FirstOrDefault(x => x.fieldName == "draw")?.filterValue ?? "0");
+            int start = Convert.ToInt32(filters.FirstOrDefault(x => x.fieldName == "start")?.filterValue ?? "0");
+            int length = Convert.ToInt32(filters.FirstOrDefault(x => x.fieldName == "length")?.filterValue ?? "10");
+
+            int partyId = 0;
+            int.TryParse(filters.FirstOrDefault(x => x.fieldName == "partyId")?.filterValue, out partyId);
+
+            int costCenterId = 0;
+            int.TryParse(filters.FirstOrDefault(x => x.fieldName == "costCenterId")?.filterValue, out costCenterId);
+
+            DateTime asOfDate = DateTime.Today;
+            if (DateTime.TryParse(filters.FirstOrDefault(x => x.fieldName == "asOfDate")?.filterValue, out DateTime ad))
+            {
+                asOfDate = ad.Date;
+            }
+
+            var rows = await (
+                from s in _context.SalesInvoices
+                join c in _context.Customers on s.CustomerId equals c.Id into custJoin
+                from c in custJoin.DefaultIfEmpty()
+                join j in _context.JobImportMasters on s.JobId equals j.Id into jobJoin
+                from j in jobJoin.DefaultIfEmpty()
+                where s.ReferenceId == _session.ReferenceId
+                    && s.IsCancelled == false
+                    && (s.BalanceAmount ?? 0) > 0
+                select new
+                {
+                    s.InvoiceId,
+                    s.InvoiceNo,
+                    s.InvoiceDate,
+                    PartyId = s.CustomerId,
+                    PartyName = c != null ? c.CustomerName : null,
+                    JobNo = j != null ? j.JobNumber : null,
+                    BlNo = j != null ? j.BlNo : null,
+                    CostCenterId = j != null ? (int?)j.CostCenterId : null,
+                    s.GrandTotal,
+                    s.PaidAmount,
+                    s.BalanceAmount,
+                    s.Status
+                }).ToListAsync();
+
+            rows = rows
+                .Where(x => (partyId == 0 || x.PartyId == partyId))
+                .Where(x => (costCenterId == 0 || x.CostCenterId == costCenterId))
+                .ToList();
+
+            var data = rows.Select(r =>
+            {
+                int age = (asOfDate - r.InvoiceDate.Date).Days;
+                if (age < 0) age = 0;
+
+                decimal bal = (decimal)(r.BalanceAmount ?? 0m);
+
+                return new Dictionary<string, object>
+                {
+                    ["InvoiceNo"] = r.InvoiceNo,
+                    ["InvoiceDate"] = r.InvoiceDate,
+                    ["PartyName"] = r.PartyName,
+                    ["JobNo"] = r.JobNo,
+                    ["BlNo"] = r.BlNo,
+                    ["AgeDays"] = age,
+                    ["Current"] = age <= 30 ? bal : 0m,
+                    ["Days31_60"] = age > 30 && age <= 60 ? bal : 0m,
+                    ["Days61_90"] = age > 60 && age <= 90 ? bal : 0m,
+                    ["Days90Plus"] = age > 90 ? bal : 0m,
+                    ["Total"] = bal,
+                    ["Status"] = StatusHelper.GetInvoiceStatus(r.Status)
+                };
+            }).ToList();
+
+            var ordered = data.OrderByDescending(x => x["InvoiceNo"]).ToList();
+
+            int totalRecords = data.Count;
+
+            return new
+            {
+                draw,
+                recordsTotal = totalRecords,
+                recordsFiltered = totalRecords,
+                data = ordered.Skip(start).Take(length).ToList(),
                 errorCode = 200
             };
         }

@@ -360,6 +360,43 @@
             </div>
         </div>
 
+        <!-- ================= PAYMENT HISTORY SECTION ================= -->
+        <div class="row g-4 mt-1" id="paymentHistorySection" style="display:none;">
+            <div class="col-lg-12">
+                <div class="info-card">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+                        <div class="section-title mb-0">Payment History (RV)</div>
+                        <div class="d-flex flex-wrap gap-4">
+                            <span><strong>Total Received:</strong> <span id="lblPaidTotal" class="text-success fw-semibold">-</span></span>
+                            <span><strong>Balance:</strong> <span id="lblPaidBalance" class="text-danger fw-semibold">-</span></span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm table-striped align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 40px;">#</th>
+                                    <th>Date</th>
+                                    <th>RV Number</th>
+                                    <th>Payment Mode</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>BL No</th>
+                                    <th>Entered By</th>
+                                    <th>Entered On</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentHistoryViewBody">
+                                <tr>
+                                    <td colspan="8" class="text-center py-3 text-muted">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
         <div class="row g-4 mt-1">
 
@@ -668,6 +705,15 @@ background:rgba(0,0,0,0.4); z-index:9999; text-align:center; padding-top:20%;">
 
                     $('#lblCustomerVat').text(invoice.CustomerVat);
 
+                    // ================= BANK DETAILS =================
+
+                    $("#lblAccountNo").text(users.AccountNo || "N/A");
+                    $("#lblAccountTitle").text(users.AccountTitle || "N/A");
+                    $("#lblBankName").text(users.BankName || "N/A");
+                    $("#lblBranch").text(users.Branch || "N/A");
+                    $("#lblSwiftCode").text(users.SwiftCode || "N/A");
+                    $("#lblIbanCode").text(users.Iban || "N/A");
+
                     // ================= SHIPMENT =================
 
                     $('#lblJobNumber').text(invoice.JobNumber);
@@ -764,9 +810,9 @@ background:rgba(0,0,0,0.4); z-index:9999; text-align:center; padding-top:20%;">
 
                     $(".vatPercentDisplay").text(vatPercentDisplay + "% VAT");
 
-                    // ================= BANK DETAILS =================
+                    // ================= PAYMENT HISTORY =================
 
-
+                    loadPaymentHistoryView(invoiceId);
                 },
                 error: function () {
                     showMessage && showMessage("An error occurred while fetching job details.", "error");
@@ -777,6 +823,67 @@ background:rgba(0,0,0,0.4); z-index:9999; text-align:center; padding-top:20%;">
                     $("#globalLoader").hide();
                 }
 
+            });
+        }
+
+        function loadPaymentHistoryView(invoiceId) {
+
+            $.ajax({
+                url: '/Invoice/GetPaymentHistory',
+                type: 'GET',
+                data: { invoiceId: invoiceId },
+                success: function (data) {
+
+                    if (data.errorCode != 200) {
+                        $("#paymentHistorySection").hide();
+                        return;
+                    }
+
+                    const payments = data.data || [];
+
+                    if (payments.length === 0) {
+                        $("#paymentHistorySection").hide();
+                        return;
+                    }
+
+                    $("#paymentHistorySection").show();
+
+                    $("#lblPaidTotal").text(formatCurrency(data.paidAmount));
+                    $("#lblPaidBalance").text(formatCurrency(data.balanceAmount));
+
+                    let html = "";
+
+                    $.each(payments, function (i, item) {
+                        html += `<tr>
+                            <td>${i + 1}</td>
+                            <td>${formatDate(item.PaymentDate)}</td>
+                            <td class="fw-semibold">${item.Rvnumber}</td>
+                            <td>${item.PaymentMode}</td>
+                            <td class="text-end fw-semibold">${formatCurrency(item.Amount)}</td>
+                            <td>${item.BlNo || "-"}</td>
+                            <td>${item.CreatedByName || "-"}</td>
+                            <td>${formatDateTime(item.CreatedOn)}</td>
+                        </tr>`;
+                    });
+
+                    $("#paymentHistoryViewBody").html(html);
+                }
+            });
+        }
+
+        function formatDateTime(dt) {
+            if (!dt) return "-";
+
+            const d = new Date(dt);
+
+            if (isNaN(d.getTime())) return dt;
+
+            return d.toLocaleString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             });
         }
 

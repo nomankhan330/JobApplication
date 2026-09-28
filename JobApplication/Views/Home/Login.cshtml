@@ -68,11 +68,16 @@
 
                             <div class="form-group mb-0 row mt-2">
                                 <div class="col-sm-7 mt-3">
-                                    <a href="#" class="text-muted"><i class="mdi mdi-lock"></i> Forgot your password?</a>
+                                    <a href="/Account/ForgotPassword" class="text-muted"><i class="mdi mdi-lock"></i> Forgot your password?</a>
                                 </div>
                                 <div class="col-sm-5 mt-3" style="display:none;">
                                     <a href="#" class="text-muted"><i class="mdi mdi-account-circle"></i> Create an account</a>
                                 </div>
+                            </div>
+
+                            <!-- Footer inside card -->
+                            <div class="mt-4 pt-3 border-top">
+                                <span class="text-muted">&copy; 2026 MZ Solutions Pvt. Ltd. All rights reserved.</span>
                             </div>
                         </form>
                     </div>
@@ -85,6 +90,12 @@
         <!-- end container -->
     </div>
     <!-- end -->
+    <!-- end footer -->
+
+    <!-- Designed and developed by MZ Solutions - fixed bottom right -->
+    <div style="position: fixed; bottom: 20px; right: 30px; z-index: 999; color: rgba(255,255,255,.95); font-weight: 600; font-size: .95rem; text-shadow: 0 1px 3px rgba(0,0,0,.85);">
+        Designed and developed by MZ Solutions.
+    </div>
     <!-- JAVASCRIPT -->
     <script src="~/assets/libs/jquery/jquery.min.js"></script>
     <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -132,6 +143,15 @@
                 success: function (data) {
                     console.log("data", data);
                     if (data.errorCode == 200) {
+
+                        if (data.twoFactorRequired === true) {
+                            showMessage("Login successfully!", "info");
+                            setTimeout(function () {
+                                window.location = '/Account/TwoFactor';
+                            }, 500);
+                            return;
+                        }
+
                         showMessage("Login successfully!", "success");
 
                         if(data.data == 1){

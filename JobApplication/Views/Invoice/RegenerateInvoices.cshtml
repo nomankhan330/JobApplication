@@ -1,0 +1,180 @@
+@{
+    ViewData["Title"] = "Regenerate Invoices";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Regenerate Invoices</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="alert alert-warning mb-0">
+                                    <strong>Note:</strong> This tool will regenerate the PDF of all Sales / Purchase invoices.
+                                    Cancelled invoices are skipped. Regeneration overwrites the existing PDF files on disk.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Invoice Type</label>
+                                <select id="regType" class="form-control select-my">
+                                    <option value="both" selected>Both (Sales + Purchase)</option>
+                                    <option value="sales">Sales Only</option>
+                                    <option value="purchase">Purchase Only</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">From Date</label>
+                                <input type="date" id="regFromDate" class="form-control" placeholder="From Date">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">To Date</label>
+                                <input type="date" id="regToDate" class="form-control" placeholder="To Date">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button id="btnRegenerate" class="btn btn-danger me-2">
+                                    <i class="fas fa-sync-alt me-1"></i> Regenerate
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3" id="resultSection" style="display:none;">
+                            <div class="col-md-12">
+                                <div class="card border">
+                                    <div class="card-body" id="resultBody"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Script {
+    <script>
+        $(document).ready(function () {
+
+            $("#btnRegenerate").on("click", function () {
+
+                var type = $("#regType").val();
+                var fromDate = $("#regFromDate").val() || "";
+                var toDate = $("#regToDate").val() || "";
+
+                if (fromDate && toDate && fromDate > toDate) {
+                    showMessage("From Date cannot be after To Date", "error");
+                    return;
+                }
+
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "All matching invoices will be re-generated and their PDFs overwritten.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Yes, Regenerate!",
+                    cancelButtonText: "Cancel"
+                }).then((result) => {
+
+                    if (!result.isConfirmed) return;
+
+                    var $btn = $("#btnRegenerate");
+                    $btn.prop("disabled", true).text("Regenerating...");
+
+                    $.ajax({
+                        url: "/Invoice/RunRegenerateInvoices",
+                        type: "POST",
+                        data: {
+                            type: type,
+                            fromDate: fromDate,
+                            toDate: toDate
+                        },
+                        success: function (data) {
+
+                            if (data.errorCode !== 200) {
+                                showMessage(data.errorMessage || "An error occurred", "error");
+                                return;
+                            }
+
+                            var html = "";
+
+                            if (data.sales) {
+                                html += renderBlock("Sales Invoice", data.sales);
+                            }
+
+                            if (data.purchase) {
+                                html += renderBlock("Purchase Invoice", data.purchase);
+                            }
+
+                            if (!html) html = "<p class='mb-0 text-muted'>Nothing to regenerate.</p>";
+
+                            $("#resultBody").html(html);
+                            $("#resultSection").show();
+
+                            showMessage("Regeneration process completed", "success");
+                        },
+                        error: function () {
+                            showMessage("An error occurred during regeneration", "error");
+                        },
+                        complete: function () {
+                            $btn.prop("disabled", false).text("Regenerate");
+                        }
+                    });
+                });
+            });
+
+            function renderBlock(title, res) {
+
+                var html = "<h6 class='text-primary mb-3'>" + title + "</h6>";
+
+                if (res.errorCode !== undefined && res.errorCode !== 200) {
+                    html += "<p class='mb-1 text-danger'>Error: " + (res.errorMessage || "Unknown error") + "</p>";
+                    html += "<hr/>";
+                    return html;
+                }
+
+                var total = res.total || 0;
+                var success = res.successCount || 0;
+                var failure = res.failureCount || 0;
+
+                html += "<p class='mb-1'>Total: <strong>" + total + "</strong> &nbsp;|&nbsp; " +
+                        "Regenerated: <strong class='text-success'>" + success + "</strong> &nbsp;|&nbsp; " +
+                        "Failed: <strong class='text-danger'>" + failure + "</strong></p>";
+
+                if (res.failures && res.failures.length > 0) {
+                    html += "<ul class='mt-2 mb-0' style='max-height:200px; overflow-y:auto;'>";
+                    res.failures.forEach(function (f) {
+                        html += "<li class='text-danger'>" + f + "</li>";
+                    });
+                    html += "</ul>";
+                }
+
+                html += "<hr/>";
+                return html;
+            }
+        });
+    </script>
+}

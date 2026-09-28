@@ -218,7 +218,7 @@
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label" for="Photo">User Photo</label>
-                            <input type="file" class="form-control select-my" id="PhotoFile" name="PhotoFile" />
+                            <input type="file" class="form-control select-my" id="PhotoFile" name="PhotoFile" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" data-file-maxsize="5" />
                         </div>
 
                         <div class="col-md-6 mb-3">
@@ -321,7 +321,8 @@
                                            class="form-control"
                                            id="Vatnumber"
                                            name="Vatnumber"
-                                           placeholder="VAT Number">
+                                           placeholder="VAT Number"
+                                           maxlength="20">
                                 </div>
 
                             </div>
@@ -417,6 +418,14 @@
         $('#btnSubmit').on('click', function () {
 
             if (!validateForm()) return;
+
+            const vatNumber = ($("#Vatnumber").val() || "").trim();
+
+            if (vatNumber && !/^\d{15,20}$/.test(vatNumber)) {
+                showMessage("VAT Number (TRN) must be 15 to 20 digits", "error");
+                $("#Vatnumber").focus();
+                return;
+            }
             
             $('#UserType').prop('disabled', false);
 

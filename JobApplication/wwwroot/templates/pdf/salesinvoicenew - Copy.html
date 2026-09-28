@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            color: #222;
+            line-height: 1.45;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            overflow: hidden !important;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        .invoice-container {
+            width: 100%;
+            padding: 10mm;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td, th {
+            vertical-align: top;
+        }
+
+        .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* ============================================================
+           HEADER / LETTERHEAD
+        ============================================================ */
+        .letterhead {
+            border-bottom: 3px solid #0d6efd;
+            padding-bottom: 8px;
+        }
+
+        .letterhead td {
+            padding: 4px 8px;
+        }
+
+        .company-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0b5ed7;
+            letter-spacing: 0.3px;
+        }
+
+        .company-sub {
+            font-size: 14px;
+            font-weight: 600;
+            color: #444;
+            margin-top: 2px;
+        }
+
+        .lh-left {
+            text-align: left;
+        }
+
+        .lh-right {
+            text-align: right;
+            direction: rtl;
+        }
+
+        .arabic-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0b5ed7;
+            direction: rtl;
+        }
+
+        .vat-line {
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        .vat-line-ar {
+            margin-top: 4px;
+            font-weight: 600;
+            direction: rtl;
+        }
+
+        /* ============================================================
+           TITLE BANNER
+        ============================================================ */
+        .title-banner {
+            margin-top: 12px;
+            background: #0d6efd;
+        }
+
+        .tb-title {
+            width: 55%;
+            color: #fff;
+            padding: 12px 18px;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+        }
+
+        .tb-title span {
+            display: block;
+            font-size: 16px;
+            font-weight: 600;
+            direction: rtl;
+        }
+
+        .tb-meta {
+            width: 45%;
+            background: #0b5ed7;
+            padding: 10px 14px;
+        }
+
+        .meta-table td {
+            padding: 2px 0;
+            color: #ffffff;
+        }
+
+        .meta-label {
+            width: 38%;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .meta-value {
+            font-weight: 700;
+            text-align: right;
+            color: #ffffff;
+        }
+
+        /* ============================================================
+           INFO BOXES (CUSTOMER + SHIPMENT)
+        ============================================================ */
+        .info-section {
+            margin-top: 12px;
+        }
+
+        .info-section td {
+            width: 50%;
+            padding: 0 6px;
+        }
+
+        .info-section td:first-child {
+            padding-left: 0;
+        }
+
+        .info-section td:last-child {
+            padding-right: 0;
+        }
+
+        .info-box {
+            border: 1px solid #dde2ea;
+        }
+
+        .box-title {
+            background: #0d6efd;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 5px 10px;
+            text-transform: uppercase;
+        }
+
+        .box-body {
+            padding: 10px;
+            min-height: 168px;
+        }
+
+        .box-name {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .box-address {
+            margin: 3px 0;
+        }
+
+        .shipment-table td {
+            padding: 4px 0;
+            border-bottom: 1px dashed #e6e9ef;
+        }
+
+        .shipment-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .shipment-label {
+            width: 45%;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .shipment-value {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        /* ============================================================
+           ITEMS TABLE
+        ============================================================ */
+        .invoice-table {
+            margin-top: 14px;
+            table-layout: fixed;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .invoice-table th {
+            background: #0d6efd;
+            color: #fff;
+            border: 1px solid #0a58ca;
+            padding: 7px 6px;
+            font-size: 12.5px;
+            letter-spacing: 0.3px;
+        }
+
+        .invoice-table td {
+            border: 1px solid #dde2ea;
+            padding: 6px;
+            font-size: 12.5px;
+        }
+
+        .invoice-table thead tr {
+            display: table-header-group;
+        }
+
+        .invoice-table tbody tr:nth-child(even) td {
+            background: #f3f7fd;
+        }
+
+        .invoice-table tbody tr:hover td {
+            background: #e7eefb;
+        }
+
+        .invoice-table th:nth-child(1),
+        .invoice-table td:nth-child(1) {
+            text-align: center;
+        }
+
+        .invoice-table th:nth-child(5),
+        .invoice-table td:nth-child(5) {
+            text-align: right;
+        }
+
+        .invoice-table th:nth-child(6),
+        .invoice-table td:nth-child(6) {
+            text-align: right;
+        }
+
+        .invoice-table th:nth-child(7),
+        .invoice-table td:nth-child(7) {
+            text-align: right;
+        }
+
+        .invoice-table th:nth-child(8),
+        .invoice-table td:nth-child(8) {
+            text-align: right;
+        }
+
+        .invoice-table th:nth-child(9),
+        .invoice-table td:nth-child(9) {
+            text-align: right;
+        }
+
+        /* ============================================================
+           SUMMARY
+        ============================================================ */
+        .summary-section {
+            margin-top: 14px;
+        }
+
+        .words-box {
+            width: 58%;
+            border: 1px solid #dde2ea;
+        }
+
+        .words-text {
+            padding: 10px;
+            min-height: 150px;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .totals {
+            width: 42%;
+            padding-left: 12px;
+        }
+
+        .summary-table {
+            border: 1px solid #dde2ea;
+        }
+
+        .summary-table tr {
+            page-break-inside: avoid;
+        }
+
+        .summary-table td {
+            padding: 7px 10px;
+            border-bottom: 1px solid #e9ecf1;
+        }
+
+        .summary-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .summary-table td:first-child {
+            width: 55%;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .summary-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .summary-table .vat-row td {
+            background: #eaf4ff;
+            color: #0b5ed7;
+        }
+
+        .summary-table .grand-row td {
+            background: #0b5ed7;
+            color: #fff;
+            font-size: 14.5px;
+            font-weight: 800;
+            border-bottom: none;
+        }
+
+        .summary-table .grand-row td:last-child {
+            text-align: right;
+        }
+
+        /* ============================================================
+           REMARKS + BANK + QR
+        ============================================================ */
+        .bottom-section {
+            margin-top: 16px;
+        }
+
+        .bottom-section td:first-child {
+            width: 70%;
+            padding-right: 14px;
+        }
+
+        .remarks-title {
+            display: inline-block;
+            border-top: 2px solid #0d6efd;
+            padding-top: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            min-width: 190px;
+            margin-bottom: 10px;
+        }
+
+        .bank-table td {
+            padding: 4px 0;
+        }
+
+        .bank-label {
+            width: 140px;
+            font-weight: 700;
+            color: #495057;
+        }
+
+        .qr-cell {
+            width: 30%;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .qr-cell .qr-placeholder {
+            border: 1px dashed #cdd3dc;
+            padding: 26px 10px;
+            color: #98a2b3;
+            font-size: 11px;
+        }
+
+        /* ============================================================
+           FOOTER
+        ============================================================ */
+        .footer-sep {
+            border: none;
+            border-top: 2px solid #0d6efd;
+            margin: 14px 0 8px 0;
+        }
+
+        .footer-note {
+            font-size: 10.5px;
+            color: #555;
+        }
+
+        /* ============================================================
+           PAGE BREAK CONTROL
+        ============================================================ */
+        tr {
+            page-break-inside: avoid;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tfoot {
+            display: table-footer-group;
+        }
+
+        div, section {
+            page-break-inside: avoid;
+        }
+
+        table {
+            page-break-inside: auto;
+        }
+
+        *:last-child {
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="invoice-container">
+
+        <!-- HEADER / LETTERHEAD -->
+        <table class="letterhead">
+            <tr>
+                <td class="lh-left">
+                    <div class="company-title">{{CompanyName}}</div>
+                    <div class="company-sub">{{EstablishmentName}}</div>
+                    <div>{{City}}, {{Country}}</div>
+                    <div class="vat-line">VAT: {{VATNumber}}</div>
+                </td>
+                <td class="lh-right">
+                    <div class="arabic-title">{{CompanyNameAr}}</div>
+                    <div class="company-sub">{{EstablishmentNameAr}}</div>
+                    <div>{{CityAr}}، {{CountryAr}}</div>
+                    <div class="vat-line-ar">رقم ضريبة القيمة المضافة: {{VATNumber}}</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- TITLE BANNER -->
+        <table class="title-banner">
+            <tr>
+                <td class="tb-title">
+                    Sales Invoice
+                    <span>فاتورة مبيعات</span>
+                </td>
+                <td class="tb-meta">
+                    <table class="meta-table">
+                        <tr>
+                            <td class="meta-label">Invoice No</td>
+                            <td class="meta-value">{{InvoiceNo}}</td>
+                        </tr>
+                        <tr>
+                            <td class="meta-label">Date</td>
+                            <td class="meta-value">{{InvoiceDate}}</td>
+                        </tr>
+                        <tr>
+                            <td class="meta-label">Status</td>
+                            <td class="meta-value">{{InvoiceStatus}}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <!-- CUSTOMER + SHIPMENT -->
+        <table class="info-section">
+            <tr>
+                <td>
+                    <div class="info-box">
+                        <div class="box-title">Buyer / Customer</div>
+                        <div class="box-body">
+                            <div class="box-name">{{CustomerName}} {{CustomerNameAr}}</div>
+                            <div class="box-address">{{CustomerAddress}}</div>
+                            <div class="box-address">{{CustomerCity}}</div>
+                            <div class="vat-line">VAT: {{CustomerVAT}}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="info-box">
+                        <div class="box-title">Shipment Details</div>
+                        <div class="box-body">
+                            <table class="shipment-table">
+                                <tr>
+                                    <td class="shipment-label">Job Number:</td>
+                                    <td class="shipment-value">{{JobNumber}}</td>
+                                </tr>
+                                <tr>
+                                    <td class="shipment-label">Mode of Shipment:</td>
+                                    <td class="shipment-value">{{ModeOfShipment}}</td>
+                                </tr>
+                                <tr>
+                                    <td class="shipment-label">Type of Shipment:</td>
+                                    <td class="shipment-value">{{ShipmentType}}</td>
+                                </tr>
+                                <tr>
+                                    <td class="shipment-label">POL:</td>
+                                    <td class="shipment-value">{{POL}}</td>
+                                </tr>
+                                <tr>
+                                    <td class="shipment-label">POD:</td>
+                                    <td class="shipment-value">{{POD}}</td>
+                                </tr>
+                                <tr>
+                                    <td class="shipment-label">B/L Number:</td>
+                                    <td class="shipment-value">{{BLNumber}}</td>
+                                </tr>
+                                <tr>
+                                    <td class="shipment-label">Payment Terms:</td>
+                                    <td class="shipment-value">{{PaymentTerms}}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- ITEMS TABLE -->
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th style="width:4%">#</th>
+                    <th style="width:10%">Type</th>
+                    <th style="width:34%">Detail</th>
+                    <th style="width:9%">Unit</th>
+                    <th style="width:7%">Qty</th>
+                    <th style="width:9%">Rate</th>
+                    <th style="width:11%">Amount</th>
+                    <th style="width:7%">VAT</th>
+                    <th style="width:9%">Total</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {{InvoiceRows}}
+            </tbody>
+        </table>
+
+        <!-- SUMMARY -->
+        <table class="summary-section">
+            <tr>
+                <td class="words-box">
+                    <div class="box-title">Amount In Words</div>
+                    <div class="words-text">
+                        <strong>{{AmountInWords}}</strong>
+                    </div>
+                </td>
+                <td class="totals">
+                    <table class="summary-table">
+                        <tr>
+                            <td>Total</td>
+                            <td>{{Total}}</td>
+                        </tr>
+                        <tr>
+                            <td>Advance</td>
+                            <td>{{Advance}}</td>
+                        </tr>
+                        <tr>
+                            <td>Discount</td>
+                            <td>{{Discount}}</td>
+                        </tr>
+                        <tr>
+                            <td>Net</td>
+                            <td>{{NetAmount}}</td>
+                        </tr>
+                        <tr class="vat-row">
+                            <td>VAT</td>
+                            <td>{{VAT}}</td>
+                        </tr>
+                        <tr class="grand-row">
+                            <td>Grand Total</td>
+                            <td>{{GrandTotal}}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <!-- REMARKS + BANK DETAILS + QR -->
+        <table class="bottom-section">
+            <tr>
+                <td>
+                    <div class="remarks-title">
+                        Remarks - ملاحظات
+                    </div>
+
+                    <div class="box-title">Our Bank A/C Details</div>
+                    <div class="box-body">
+                        <table class="bank-table">
+                            <tr>
+                                <td class="bank-label">A/C No</td>
+                                <td>{{AccountNo}}</td>
+                            </tr>
+                            <tr>
+                                <td class="bank-label">Bank</td>
+                                <td>{{BankName}}</td>
+                            </tr>
+                            <tr>
+                                <td class="bank-label">IBAN</td>
+                                <td>{{IBAN}}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
+                <td class="qr-cell">
+                    {{QRCodeValue}}
+                </td>
+            </tr>
+        </table>
+
+        <!-- FOOTER -->
+        <hr class="footer-sep" />
+        <div class="footer-note">
+            This is a computer-generated invoice and does not require signature or stamp.
+            <br /><br />
+            Print Date: {{PrintDate}}
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -4,6 +4,7 @@ using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
 using BusinessLogic.Services;
 using Microsoft.EntityFrameworkCore;
+using JobApplication.Helpers;
 
 namespace JobApplication.Controllers
 {
@@ -35,6 +36,20 @@ namespace JobApplication.Controllers
 
         public async Task<IActionResult> Save(Customer model, IFormFile PhotoFile)
         {
+            if (model == null)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = "Invalid request. No customer data received." }),
+                    "application/json");
+            }
+
+            if (!FileUploadHelper.IsAllowed(PhotoFile, out string uploadError))
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = uploadError }),
+                    "application/json");
+            }
+
             var result = await _customer.Save(model);
             return Content(JsonConvert.SerializeObject(result), "application/json");
         }

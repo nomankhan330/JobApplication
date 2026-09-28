@@ -68,6 +68,44 @@ namespace JobApplication.Controllers
             return Json(result);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> DownloadSalesInvoicesExcel(string customerId, string fromDate, string toDate, string invoiceNo, string jobNo)
+        {
+            var filters = new List<QueryFilters>
+            {
+                new QueryFilters { fieldName = "CustomerId", filterValue = customerId },
+                new QueryFilters { fieldName = "FromDate", filterValue = fromDate },
+                new QueryFilters { fieldName = "ToDate", filterValue = toDate },
+                new QueryFilters { fieldName = "InvoiceNo", filterValue = invoiceNo },
+                new QueryFilters { fieldName = "JobNo", filterValue = jobNo }
+            };
+
+            var fileBytes = await _salesinvoice.ExportExcel(filters);
+
+            string fileName = $"SalesInvoices_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DownloadSalesInvoicesPdf(string customerId, string fromDate, string toDate, string invoiceNo, string jobNo)
+        {
+            var filters = new List<QueryFilters>
+            {
+                new QueryFilters { fieldName = "CustomerId", filterValue = customerId },
+                new QueryFilters { fieldName = "FromDate", filterValue = fromDate },
+                new QueryFilters { fieldName = "ToDate", filterValue = toDate },
+                new QueryFilters { fieldName = "InvoiceNo", filterValue = invoiceNo },
+                new QueryFilters { fieldName = "JobNo", filterValue = jobNo }
+            };
+
+            var fileBytes = await _salesinvoice.ExportPdf(filters);
+
+            string fileName = $"SalesInvoices_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+
+            return File(fileBytes, "application/pdf", fileName);
+        }
+
         public async Task<IActionResult> GetSalesInvoiceById(int invoiceId)
         {
             var result = await _salesinvoice.GetInvoiceById(invoiceId);
@@ -108,6 +146,14 @@ namespace JobApplication.Controllers
                 JsonConvert.SerializeObject(result),
                 "application/json"
             );
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPaymentHistory(int invoiceId)
+        {
+            var result = await _salesinvoice.GetPaymentHistory(invoiceId);
+
+            return Json(result);
         }
 
         [HttpGet]
@@ -205,6 +251,44 @@ namespace JobApplication.Controllers
             return Json(result);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> DownloadPurchaseInvoicesExcel(string serviceProviderId, string fromDate, string toDate, string invoiceNo, string jobNo)
+        {
+            var filters = new List<QueryFilters>
+            {
+                new QueryFilters { fieldName = "ServiceProviderId", filterValue = serviceProviderId },
+                new QueryFilters { fieldName = "FromDate", filterValue = fromDate },
+                new QueryFilters { fieldName = "ToDate", filterValue = toDate },
+                new QueryFilters { fieldName = "InvoiceNo", filterValue = invoiceNo },
+                new QueryFilters { fieldName = "JobNo", filterValue = jobNo }
+            };
+
+            var fileBytes = await _purchaseinvoice.ExportExcel(filters);
+
+            string fileName = $"PurchaseInvoices_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DownloadPurchaseInvoicesPdf(string serviceProviderId, string fromDate, string toDate, string invoiceNo, string jobNo)
+        {
+            var filters = new List<QueryFilters>
+            {
+                new QueryFilters { fieldName = "ServiceProviderId", filterValue = serviceProviderId },
+                new QueryFilters { fieldName = "FromDate", filterValue = fromDate },
+                new QueryFilters { fieldName = "ToDate", filterValue = toDate },
+                new QueryFilters { fieldName = "InvoiceNo", filterValue = invoiceNo },
+                new QueryFilters { fieldName = "JobNo", filterValue = jobNo }
+            };
+
+            var fileBytes = await _purchaseinvoice.ExportPdf(filters);
+
+            string fileName = $"PurchaseInvoices_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+
+            return File(fileBytes, "application/pdf", fileName);
+        }
+
         public async Task<IActionResult> GetPurchaseInvoiceById(int invoiceId, int serviceProviderId)
         {
             var result = await _purchaseinvoice.GetInvoiceById(invoiceId, serviceProviderId);
@@ -245,6 +329,14 @@ namespace JobApplication.Controllers
                 JsonConvert.SerializeObject(result),
                 "application/json"
             );
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPurchasePaymentHistory(int invoiceId)
+        {
+            var result = await _purchaseinvoice.GetPaymentHistory(invoiceId);
+
+            return Json(result);
         }
 
         [HttpGet]
@@ -331,6 +423,64 @@ namespace JobApplication.Controllers
             string fileName = $"Government_Tax_Report_{fromDate:yyyyMMdd}_to_{toDate:yyyyMMdd}.xlsx";
 
             return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        #endregion
+
+        #region Super Admin - Bulk Invoice Regeneration
+
+        public IActionResult RegenerateInvoices()
+        {
+            if (_session.UserType != 1 && _session.LoginType != 1)
+            {
+                return RedirectToAction("Unauthorized", "Job");
+            }
+
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RunRegenerateInvoices(string type, DateTime? fromDate, DateTime? toDate)
+        {
+            if (_session.UserType != 1 && _session.LoginType != 1)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 403, errorMessage = "Access denied. Super Admin only." }),
+                    "application/json");
+            }
+
+            try
+            {
+                type = (type ?? "both").ToLower();
+
+                object salesResult = null;
+                object purchaseResult = null;
+
+                if (type == "sales" || type == "both")
+                {
+                    salesResult = await _salesinvoice.RegenerateInvoices(fromDate, toDate);
+                }
+
+                if (type == "purchase" || type == "both")
+                {
+                    purchaseResult = await _purchaseinvoice.RegenerateInvoices(fromDate, toDate);
+                }
+
+                return Content(
+                    JsonConvert.SerializeObject(new
+                    {
+                        errorCode = 200,
+                        sales = salesResult,
+                        purchase = purchaseResult
+                    }),
+                    "application/json");
+            }
+            catch (Exception ex)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 500, errorMessage = ex.Message }),
+                    "application/json");
+            }
         }
 
         #endregion

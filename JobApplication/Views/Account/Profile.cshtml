@@ -60,7 +60,7 @@
 
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label" for="PhotoFile">Profile Photo</label>
-                                            <input type="file" class="form-control" id="PhotoFile" name="PhotoFile" accept="image/*" />
+                                            <input type="file" class="form-control" id="PhotoFile" name="PhotoFile" accept="image/*" data-file-maxsize="5" />
                                         </div>
 
                                         <div class="col-md-6 mb-3">
@@ -73,57 +73,163 @@
                                 </div>
                             </div>
 
-                            <!-- ==================== Company Details Card ==================== -->
-                            <div class="card mb-4">
+                            @if (SessionHelper.UserType == 2 || SessionHelper.LoginType == 2)
+                            {
+                                <!-- ==================== Company Details Card ==================== -->
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-4">Company Details</h5>
+
+                                        <div class="row">
+                                            <!-- Company Name -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Company Name (English)</label>
+                                                <input type="text" class="form-control" id="CompanyName" name="CompanyName" />
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Company Name (Arabic)</label>
+                                                <input type="text" class="form-control" id="CompanyNameAr" name="CompanyNameAr" dir="rtl" />
+                                            </div>
+
+                                            <!-- Establishment Name -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Establishment Name (English)</label>
+                                                <input type="text" class="form-control" id="EstablishmentName" name="EstablishmentName" />
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Establishment Name (Arabic)</label>
+                                                <input type="text" class="form-control" id="EstablishmentNameAr" name="EstablishmentNameAr" dir="rtl" />
+                                            </div>
+
+                                            <!-- Country -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Country (English)</label>
+                                                <input type="text" class="form-control" id="Country" name="Country" />
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Country (Arabic)</label>
+                                                <input type="text" class="form-control" id="CountryAr" name="CountryAr" dir="rtl" />
+                                            </div>
+
+                                            <!-- City -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">City (English)</label>
+                                                <input type="text" class="form-control" id="City" name="City" />
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">City (Arabic)</label>
+                                                <input type="text" class="form-control" id="CityAr" name="CityAr" dir="rtl" />
+                                            </div>
+
+                                            <!-- VAT Number -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">VAT Number</label>
+                                                <input type="text" class="form-control" id="Vatnumber" name="Vatnumber" maxlength="20" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ==================== Bank Details Card ==================== -->
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-4">Bank Details</h5>
+
+                                        <div class="row">
+                                            <!-- A/C No -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">A/C No</label>
+                                                <input type="text" class="form-control" id="AccountNo" name="AccountNo" />
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">A/C Title</label>
+                                                <input type="text" class="form-control" id="AccountTitle" name="AccountTitle" />
+                                            </div>
+
+                                            <!-- Bank -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Bank</label>
+                                                <input type="text" class="form-control" id="BankName" name="BankName" />
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Branch</label>
+                                                <input type="text" class="form-control" id="Branch" name="Branch" />
+                                            </div>
+
+                                            <!-- SWIFT Code -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">SWIFT Code</label>
+                                                <input type="text" class="form-control" id="SwiftCode" name="SwiftCode" />
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">IBAN Code</label>
+                                                <input type="text" class="form-control" id="Iban" name="Iban" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- ==================== Two Factor Auth Card ==================== -->
+                            <div class="card mb-4" id="twoFactorCard">
                                 <div class="card-body">
-                                    <h5 class="card-title mb-4">Company Details</h5>
+                                    <h5 class="card-title mb-4">Two-Factor Authentication</h5>
 
-                                    <div class="row">
-                                        <!-- Company Name -->
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Company Name (English)</label>
-                                            <input type="text" class="form-control" id="CompanyName" name="CompanyName" />
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <span class="text-muted">Status:</span>
+                                            <span id="twoFactorStatusBadge" class="badge bg-secondary ms-1">Loading...</span>
                                         </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Company Name (Arabic)</label>
-                                            <input type="text" class="form-control" id="CompanyNameAr" name="CompanyNameAr" dir="rtl" />
+                                        <div>
+                                            <button type="button" id="btnSetup2FA" class="btn btn-success" style="display:none;">
+                                                Enable Two-Factor Authentication
+                                            </button>
+                                            <button type="button" id="btnDisable2FA" class="btn btn-outline-danger" style="display:none;">
+                                                Disable Two-Factor Authentication
+                                            </button>
                                         </div>
+                                    </div>
 
-                                        <!-- Establishment Name -->
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Establishment Name (English)</label>
-                                            <input type="text" class="form-control" id="EstablishmentName" name="EstablishmentName" />
+                                    <div id="twoFactorSetupBox" style="display:none;">
+                                        <hr />
+                                        <div class="alert alert-info">
+                                            1. Scan the QR code with your authenticator app.<br />
+                                            2. Enter the 6-digit code it shows to confirm.
                                         </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Establishment Name (Arabic)</label>
-                                            <input type="text" class="form-control" id="EstablishmentNameAr" name="EstablishmentNameAr" dir="rtl" />
+                                        <div class="row">
+                                            <div class="col-md-4 text-center mb-3">
+                                                <div id="profileQrBox" class="d-inline-block p-2 border rounded">
+                                                    <img src="~/assets/images/logo-dark.png" height="140" alt="QR Code" id="profileQrImage" />
+                                                </div>
+                                            </div>
+                                            <div class="col-md-8">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Manual setup key</label>
+                                                    <input type="text" class="form-control" id="profileSecretKey" readonly onclick="this.select();" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Verification code</label>
+                                                    <div class="d-flex" id="profileOtpBoxes">
+                                                        <input class="form-control otp-box me-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="profileOtp1" />
+                                                        <input class="form-control otp-box me-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="profileOtp2" />
+                                                        <input class="form-control otp-box me-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="profileOtp3" />
+                                                        <input class="form-control otp-box me-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="profileOtp4" />
+                                                        <input class="form-control otp-box me-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="profileOtp5" />
+                                                        <input class="form-control otp-box me-1" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" id="profileOtp6" />
+                                                    </div>
+                                                </div>
+                                                <button type="button" id="btnConfirm2FA" class="btn btn-primary">Confirm &amp; Enable</button>
+                                            </div>
                                         </div>
+                                    </div>
 
-                                        <!-- Country -->
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Country (English)</label>
-                                            <input type="text" class="form-control" id="Country" name="Country" />
+                                    <div id="twoFactorRecoveryBox" style="display:none;">
+                                        <hr />
+                                        <div class="alert alert-warning">
+                                            Save these recovery codes in a safe place. Each can be used once if you lose access to your authenticator app.
                                         </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Country (Arabic)</label>
-                                            <input type="text" class="form-control" id="CountryAr" name="CountryAr" dir="rtl" />
-                                        </div>
-
-                                        <!-- City -->
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">City (English)</label>
-                                            <input type="text" class="form-control" id="City" name="City" />
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">City (Arabic)</label>
-                                            <input type="text" class="form-control" id="CityAr" name="CityAr" dir="rtl" />
-                                        </div>
-
-                                        <!-- VAT Number -->
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">VAT Number</label>
-                                            <input type="text" class="form-control" id="Vatnumber" name="Vatnumber" />
-                                        </div>
+                                        <div id="profileRecoveryCodes" class="d-flex flex-wrap mb-3"></div>
+                                        <button type="button" id="btnCloseRecovery2FA" class="btn btn-secondary">Close</button>
                                     </div>
                                 </div>
                             </div>
@@ -140,8 +246,24 @@
 </div>
 
 @section Script {
+    <style>
+        .otp-box {
+            width: 42px;
+            height: 46px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+        }
+        .otp-box:focus {
+            border-color: #5369f8;
+            box-shadow: 0 0 0 0.15rem rgba(83, 105, 248, 0.25);
+        }
+    </style>
     <script>
         $(document).ready(function () {
+            applyGlobalInputRules();
             loadProfile();
 
             $("#PhotoFile").on("change", function () {
@@ -167,6 +289,14 @@
 
                 if (!form.checkValidity()) {
                     form.reportValidity();
+                    return;
+                }
+
+                const vatNumber = ($("#Vatnumber").val() || "").trim();
+
+                if (vatNumber && !/^\d{15,20}$/.test(vatNumber)) {
+                    showMessage("VAT Number (TRN) must be 15 to 20 digits", "error");
+                    $("#Vatnumber").focus();
                     return;
                 }
 
@@ -209,14 +339,238 @@
                     }
                 });
             });
+
+            loadTwoFactorStatus();
+
+            $("#btnSetup2FA").on("click", function () {
+                $.ajax({
+                    url: "/Account/GenerateTwoFactorSecret",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({}),
+                    success: function (res) {
+                        if (res.errorCode !== 200) {
+                            showMessage(res.errorMessage, "error");
+                            return;
+                        }
+                        $("#profileQrImage").attr("src", res.qr);
+                        $("#profileSecretKey").val(res.secret);
+                        $("#profileOtp1").val("").focus();
+                        $("#twoFactorSetupBox").show();
+                    },
+                    error: function () {
+                        showMessage("Unable to generate 2FA secret", "error");
+                    }
+                });
+            });
+
+            bindOtpBoxes("#profileOtpBoxes", function (code) { confirmTwoFactor(code); });
+
+            $("#btnConfirm2FA").on("click", function () {
+                confirmTwoFactor(otpValue("#profileOtpBoxes"));
+            });
+
+            function confirmTwoFactor(code) {
+                code = (code || "").trim();
+                if (!code) {
+                    showMessage("Please enter the verification code", "error");
+                    return;
+                }
+
+                const $btn = $("#btnConfirm2FA");
+                $btn.prop("disabled", true).text("Please Wait...");
+
+                $.ajax({
+                    url: "/Account/EnableTwoFactor",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ code: code }),
+                    success: function (res) {
+                        if (res.errorCode !== 200) {
+                            showMessage(res.errorMessage, "error");
+                            $btn.prop("disabled", false).text("Confirm & Enable");
+                            return;
+                        }
+
+                        const list = res.recoveryCodes || [];
+                        let html = "";
+                        list.forEach(function (c) {
+                            html += '<span class="badge bg-light text-dark font-size-14 border me-2 mb-2" style="font-family: monospace; padding: 8px 12px;">' + c + '</span>';
+                        });
+                        $("#profileRecoveryCodes").html(html);
+
+                        $("#twoFactorSetupBox").hide();
+                        $("#twoFactorRecoveryBox").show();
+                        $("#twoFactorStatusBadge")
+                            .removeClass("bg-secondary")
+                            .addClass("bg-success")
+                            .text("Enabled");
+                        $("#btnSetup2FA").hide();
+                        $("#btnDisable2FA").show();
+
+                        $btn.prop("disabled", false).text("Confirm & Enable");
+                    },
+                    error: function () {
+                        showMessage("An error occurred while enabling 2FA", "error");
+                        $btn.prop("disabled", false).text("Confirm & Enable");
+                    }
+                });
+            }
+
+            $("#btnCloseRecovery2FA").on("click", function () {
+                $("#twoFactorRecoveryBox").hide();
+            });
+
+            $("#btnDisable2FA").on("click", function () {
+                let code = "";
+                Swal.fire({
+                    title: "Disable Two-Factor Authentication?",
+                    text: "Enter a current code from your authenticator app (or a recovery code) to confirm.",
+                    input: "text",
+                    inputPlaceholder: "6-digit code",
+                    showCancelButton: true,
+                    confirmButtonText: "Disable",
+                    allowOutsideClick: false
+                }).then(function (result) {
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+                    code = (result.value || "").trim();
+                    if (!code) {
+                        Swal.fire("Error", "Please enter the verification code", "error");
+                        return;
+                    }
+                    $.ajax({
+                        url: "/Account/DisableTwoFactor",
+                        type: "POST",
+                        contentType: "application/json",
+                        data: JSON.stringify({ code: code }),
+                        success: function (res) {
+                            if (res.errorCode !== 200) {
+                                Swal.fire("Error", res.errorMessage || "Invalid code", "error");
+                                return;
+                            }
+                            Swal.fire("Success", "Two-factor authentication disabled", "success").then(function () {
+                                $("#twoFactorStatusBadge")
+                                    .removeClass("bg-success")
+                                    .addClass("bg-secondary")
+                                    .text("Disabled");
+                                $("#btnSetup2FA").show();
+                                $("#btnDisable2FA").hide();
+                            });
+                        },
+                        error: function () {
+                            Swal.fire("Error", "An error occurred", "error");
+                        }
+                    });
+                });
+            });
         });
 
-        function loadProfile() {
-            
+        function loadTwoFactorStatus() {
+            $.ajax({
+                url: "/Account/TwoFactorStatus",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({}),
+                success: function (res) {
+                    if (res.errorCode !== 200) {
+                        $("#twoFactorCard").hide();
+                        return;
+                    }
+                    if (res.globallyEnabled !== true) {
+                        $("#twoFactorCard").hide();
+                        return;
+                    }
+                    if (res.enabled === true) {
+                        $("#twoFactorStatusBadge")
+                            .removeClass("bg-secondary")
+                            .addClass("bg-success")
+                            .text("Enabled");
+                        $("#btnSetup2FA").hide();
+                        $("#btnDisable2FA").show();
+                    } else {
+                        $("#twoFactorStatusBadge").text("Disabled");
+                        $("#btnSetup2FA").show();
+                        $("#btnDisable2FA").hide();
+                    }
+                }
+            });
+        }
+
+        function bindOtpBoxes(container, onSubmit) {
+            var $boxes = $(container).find(".otp-box");
+
+            $boxes.on("input", function () {
+                var val = String($(this).val()).replace(/[^0-9]/g, "").slice(-1);
+                $(this).val(val);
+
+                if (val) {
+                    var $next = $(this).next(".otp-box");
+                    if ($next.length) {
+                        $next.focus();
+                    }
+                }
+                checkOtpComplete(container, onSubmit);
+            });
+
+            $boxes.on("keydown", function (e) {
+                if (e.key === "Backspace" && !$(this).val()) {
+                    var $prev = $(this).prev(".otp-box");
+                    if ($prev.length) {
+                        $prev.val("").focus();
+                    }
+                }
+            });
+
+            $boxes.on("paste", function (e) {
+                e.preventDefault();
+                var text = (e.originalEvent.clipboardData || window.clipboardData).getData("text") || "";
+                var digits = text.replace(/[^0-9]/g, "").split("").slice(0, $boxes.length);
+
+                $boxes.each(function (i) {
+                    $(this).val(digits[i] || "");
+                });
+
+                if (digits.length === $boxes.length) {
+                    onSubmit(digits.join(""));
+                } else if (digits.length) {
+                    $boxes.eq(digits.length).focus();
+                }
+            });
+
+            $boxes.on("focus", function () {
+                $(this).select();
+            });
+        }
+
+        function otpValue(container) {
+            var v = "";
+            $(container).find(".otp-box").each(function () {
+                v += $(this).val() || "";
+            });
+            return v;
+        }
+
+        function checkOtpComplete(container, onSubmit) {
+            var $boxes = $(container).find(".otp-box");
+            var filled = 0;
+            $boxes.each(function () {
+                if ($(this).val()) {
+                    filled++;
+                }
+            });
+            if (filled === $boxes.length) {
+                onSubmit(otpValue(container));
+            }
+        }
+
+        function loadProfile(){
+
             $.ajax({
                 url: "/Account/GetProfile",
                 type: "POST",
-                success: function (data) {
+                success: function(data) {
                     if (data.errorCode !== 200) {
                         showMessage(data.errorMessage, "error");
                         return;
@@ -228,7 +582,7 @@
                     $("#UserId").val(user.UserId || "");
                     $("#UserName").val(user.UserName || "");
                     $("#Email").val(user.Email || "");
-                    $("#PhoneNo").val(user.PhoneNo|| "");
+                    $("#PhoneNo").val(user.PhoneNo || "");
                     $("#Cnic").val(user.Cnic || "");
 
 
@@ -243,18 +597,28 @@
                     $("#CityAr").val(user.CityAr || "");
                     $("#Vatnumber").val(user.Vatnumber || "");
 
+                    // Bank fields
+                    $("#AccountNo").val(user.AccountNo || "");
+                    $("#AccountTitle").val(user.AccountTitle || "");
+                    $("#BankName").val(user.BankName || "");
+                    $("#Branch").val(user.Branch || "");
+                    $("#SwiftCode").val(user.SwiftCode || "");
+                    $("#Iban").val(user.Iban || "");
+
                     if (user.Photo) {
                         $("#PhotoPreview")
                             .attr("src", "/uploads/users/" + user.Photo)
                             .show();
                     }
                 },
-                error: function () {
+                error: function() {
                     showMessage(
                         "Unable to load profile",
                         "error");
                 }
             });
+
         }
+        
     </script>
 }

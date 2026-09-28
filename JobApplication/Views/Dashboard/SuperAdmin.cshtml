@@ -1,0 +1,1050 @@
+@{
+    ViewData["Title"] = "Super Admin Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Head {
+
+    <style>
+        .dataTables_paginate {
+            text-align: right !important;
+        }
+
+        .pagination-rounded .page-link {
+            border-radius: 50px !important;
+        }
+
+        .dataTables_paginate .pagination {
+            justify-content: flex-end !important;
+        }
+
+        .kpi-card-v2 {
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+            .kpi-card-v2:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            }
+
+            .kpi-card-v2::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 3px;
+                background: transparent;
+                transition: background 0.3s ease;
+            }
+
+            .kpi-card-v2.accent-primary::before {
+                background: linear-gradient(90deg, #5b73e8, #4458be);
+            }
+
+            .kpi-card-v2.accent-info::before {
+                background: linear-gradient(90deg, #17a2b8, #02a0b6);
+            }
+
+            .kpi-card-v2.accent-warning::before {
+                background: linear-gradient(90deg, #f1b44c, #ff9800);
+            }
+
+            .kpi-card-v2.accent-success::before {
+                background: linear-gradient(90deg, #34c38f, #10b981);
+            }
+
+            .kpi-card-v2.accent-danger::before {
+                background: linear-gradient(90deg, #f46a6a, #ef4444);
+            }
+
+        .avatar-soft-primary {
+            background: rgba(91, 115, 232, 0.12) !important;
+            color: #5b73e8 !important;
+        }
+
+        .avatar-soft-info {
+            background: rgba(23, 162, 184, 0.12) !important;
+            color: #17a2b8 !important;
+        }
+
+        .avatar-soft-warning {
+            background: rgba(241, 180, 76, 0.12) !important;
+            color: #f1b44c !important;
+        }
+
+        .avatar-soft-success {
+            background: rgba(52, 195, 143, 0.12) !important;
+            color: #34c38f !important;
+        }
+
+        .avatar-soft-danger {
+            background: rgba(244, 106, 106, 0.12) !important;
+            color: #f46a6a !important;
+        }
+
+        .trend-badge {
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+
+        .trend-badge-success {
+            background: rgba(52, 195, 143, 0.12);
+            color: #10b981;
+        }
+
+        .trend-badge-danger {
+            background: rgba(244, 106, 106, 0.12);
+            color: #ef4444;
+        }
+
+        .user-status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-active {
+            background: #34c38f;
+        }
+
+        .status-inactive {
+            background: #f46a6a;
+        }
+    </style>
+}
+
+<div class="page-content">
+    <!-- Full page loader for dashboard -->
+    <div id="superAdminFullLoader" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.85); z-index:99999; align-items:center; justify-content:center;">
+        <div style="text-align:center;">
+            <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"></div>
+            <div style="margin-top:12px; font-weight:600; color:#333;">Loading Super Admin Dashboard, please wait...</div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+
+        <!-- start page title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Super Admin Dashboard</h4>
+                </div>
+            </div>
+        </div>
+        <!-- end page title -->
+
+        <!-- Row 1: System KPIs (Global) -->
+        <div class="row">
+            <!-- Total Users -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card-v2 accent-primary h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Total Users</span>
+                                <h3 class="my-2 fw-bold text-dark"><span id="saTotalUsers">0</span></h3>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span class="text-muted font-size-12">
+                                        <span class="text-success fw-bold" id="saTotalAdminUsers">0</span> Admin &nbsp;|&nbsp;
+                                        <span class="text-primary fw-bold" id="saTotalAuthUsers">0</span> Auth &nbsp;|&nbsp;
+                                        <span class="text-warning fw-bold" id="saTotalUnAuthUsers">0</span> UnAuth
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center mt-1">
+                                    <span class="text-muted font-size-12">
+                                        <span class="text-success fw-bold" id="saActiveUsers">0</span> Active &nbsp;|&nbsp;
+                                        <span class="text-danger fw-bold" id="saInactiveUsers">0</span> Inactive
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="avatar-md">
+                                <span class="avatar-title avatar-soft-primary rounded-circle">
+                                    <i class="ri-user-follow-line font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Centers -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card-v2 accent-info h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Cost Centers</span>
+                                <h3 class="my-2 fw-bold text-dark"><span id="saTotalCostCenters">0</span></h3>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span class="text-muted font-size-12">
+                                        <span class="text-success fw-bold" id="saActiveCostCenters">0</span> Active
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="avatar-md">
+                                <span class="avatar-title avatar-soft-info rounded-circle">
+                                    <i class="ri-building-2-line font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Companies -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card-v2 accent-warning h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Companies</span>
+                                <h3 class="my-2 fw-bold text-dark"><span id="saTotalCompanies">0</span></h3>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span class="text-muted font-size-12">Registered on system</span>
+                                </div>
+                            </div>
+                            <div class="avatar-md">
+                                <span class="avatar-title avatar-soft-warning rounded-circle">
+                                    <i class="ri-building-4-line font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customers & Service Providers -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card-v2 accent-success h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Customers & Service Providers</span>
+                                <h3 class="my-2 fw-bold text-dark">
+                                    <span id="saTotalParties">0</span>
+                                </h3>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span class="text-muted font-size-12">
+                                        <span class="fw-bold" id="saTotalCustomers">0</span> Customers &nbsp;|&nbsp;
+                                        <span class="fw-bold" id="saServiceProviders">0</span> SP
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="avatar-md">
+                                <span class="avatar-title avatar-soft-success rounded-circle">
+                                    <i class="ri-contacts-line font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Job Statistics (Global) -->
+        <div class="row">
+            <!-- Total Jobs -->
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card kpi-card-v2 accent-primary h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Total Jobs</span>
+                                <h3 class="my-2 fw-bold text-dark"><span id="saTotalJobs">0</span></h3>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span id="saTotalJobsTrend" class="trend-badge trend-badge-success me-2">
+                                        <i class="ri-arrow-right-up-line align-middle"></i> <span class="trend-text">+0.00%</span>
+                                    </span>
+                                    <span class="text-muted font-size-12">from previous month</span>
+                                </div>
+                            </div>
+                            <div class="avatar-md">
+                                <span class="avatar-title avatar-soft-primary rounded-circle">
+                                    <i class="ri-archive-line font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Jobs -->
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card kpi-card-v2 accent-info h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Import Jobs</span>
+                                <h3 class="my-2 fw-bold text-dark"><span id="saImportJobs">0</span></h3>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span id="saImportJobsTrend" class="trend-badge trend-badge-success me-2">
+                                        <i class="ri-arrow-right-up-line align-middle"></i> <span class="trend-text">+0.00%</span>
+                                    </span>
+                                    <span class="text-muted font-size-12">from previous month</span>
+                                </div>
+                            </div>
+                            <div class="avatar-md">
+                                <span class="avatar-title avatar-soft-info rounded-circle">
+                                    <i class="ri-ship-line font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Jobs -->
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card kpi-card-v2 accent-warning h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Export Jobs</span>
+                                <h3 class="my-2 fw-bold text-dark"><span id="saExportJobs">0</span></h3>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span id="saExportJobsTrend" class="trend-badge trend-badge-success me-2">
+                                        <i class="ri-arrow-right-up-line align-middle"></i> <span class="trend-text">+0.00%</span>
+                                    </span>
+                                    <span class="text-muted font-size-12">from previous month</span>
+                                </div>
+                            </div>
+                            <div class="avatar-md">
+                                <span class="avatar-title avatar-soft-warning rounded-circle">
+                                    <i class="ri-plane-line font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Financial Statistics (Global) -->
+        <div class="row">
+            <!-- Sales Revenue -->
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card kpi-card-v2 accent-success h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Sales Revenue</span>
+                                <h3 class="my-2 fw-bold text-success" id="saSalesRevenueAmount">0</h3>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span class="trend-badge me-2" id="saSalesRevenueTrend">
+                                        <i class="ri-arrow-right-up-line align-middle"></i>
+                                        <span class="trend-text">0%</span>
+                                    </span>
+                                    <span class="text-muted font-size-12">Month to Date</span>
+                                </div>
+                            </div>
+                            <div class="avatar-md">
+                                <span class="avatar-title avatar-soft-success rounded-circle">
+                                    <i class="mdi mdi-currency-usd font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Provider Outstanding -->
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card kpi-card-v2 accent-danger h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">SP Outstanding</span>
+                                <h3 class="my-2 fw-bold text-danger" id="saSpOutstandingAmount">0</h3>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span class="trend-badge me-2" id="saSpOutstandingTrend">
+                                        <i class="ri-arrow-right-down-line align-middle"></i>
+                                        <span class="trend-text">0%</span>
+                                    </span>
+                                    <span class="text-muted font-size-12">Pending Payables</span>
+                                </div>
+                            </div>
+                            <div class="avatar-md">
+                                <span class="avatar-title avatar-soft-danger rounded-circle">
+                                    <i class="ri-file-text-line font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Net Cash Inflow -->
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card kpi-card-v2 accent-primary h-100 mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-uppercase font-size-12 fw-bold text-muted tracking-wide">Net Cash Inflow</span>
+                                <h3 class="my-2 fw-bold text-dark" id="saNetCashInflowAmount">0</h3>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span class="trend-badge me-2" id="saNetCashInflowTrend">
+                                        <i class="ri-arrow-right-up-line align-middle"></i>
+                                        <span class="trend-text">0%</span>
+                                    </span>
+                                    <span class="text-muted font-size-12">Cash Flow Strength</span>
+                                </div>
+                            </div>
+                            <div class="avatar-md">
+                                <span class="avatar-title avatar-soft-primary rounded-circle">
+                                    <i class="ri-safe-2-line font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 4: Charts Row (Global) -->
+        <div class="row">
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-body pb-0">
+                        <h4 class="card-title mb-4">Sales vs Purchases Trend (All Companies)</h4>
+
+                        <div class="text-center pt-3">
+                            <div class="row">
+                                <div class="col-sm-4 mb-3 mb-sm-0">
+                                    <div class="d-inline-flex">
+                                        <h5 class="me-2" id="saSalesTotal">Rs. 0</h5>
+                                    </div>
+                                    <p class="text-muted text-truncate mb-0">Sales (Period)</p>
+                                </div>
+                                <div class="col-sm-4 mb-3 mb-sm-0">
+                                    <div class="d-inline-flex">
+                                        <h5 class="me-2" id="saPurchasesTotal">Rs. 0</h5>
+                                    </div>
+                                    <p class="text-muted text-truncate mb-0">Purchases (Period)</p>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="d-inline-flex">
+                                        <h5 class="me-2" id="saNetTotal">Rs. 0</h5>
+                                    </div>
+                                    <p class="text-muted text-truncate mb-0">Net Margin</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body py-0 px-2">
+                        <div id="sa_area_chart" class="apex-charts" dir="ltr"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-body pb-0">
+                        <div class="float-end d-none d-md-inline-block">
+                            <div class="dropdown">
+                                <a class="text-reset dropdown-toggle" href="#" id="saRevenuePeriodToggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="text-muted" id="saRevenuePeriodLabel">This Year<i class="mdi mdi-chevron-down ms-1"></i></span>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="saRevenuePeriodToggle">
+                                    <a class="dropdown-item sa-revenue-period" href="#" data-period="ThisYear">This Year</a>
+                                    <a class="dropdown-item sa-revenue-period" href="#" data-period="LastYear">Last Year</a>
+                                </div>
+                            </div>
+                        </div>
+                        <h4 class="card-title mb-4">Revenue Billing vs Cash Collection (All Companies)</h4>
+
+                        <div class="text-center pt-3">
+                            <div class="row">
+                                <div class="col-sm-4 mb-3 mb-sm-0">
+                                    <div>
+                                        <h5 id="saTotalInvoiced">Rs. 0</h5>
+                                        <p class="text-muted text-truncate mb-0">Total Invoiced</p>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4 mb-3 mb-sm-0">
+                                    <div>
+                                        <h5 id="saCollectedCash">Rs. 0</h5>
+                                        <p class="text-muted text-truncate mb-0">Collected Cash</p>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div>
+                                        <h5 id="saRemainingRecovery">Rs. 0</h5>
+                                        <p class="text-muted text-truncate mb-0">Remaining Recovery</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body py-0 px-2">
+                        <div id="sa_column_line_chart" class="apex-charts" dir="ltr"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end charts row -->
+
+        <!-- Row 5: Recent Invoices + Job Operations Share -->
+        <div class="row">
+            <div class="col-xl-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title mb-4">Recent Invoices (All Companies)</h4>
+
+                        <div class="table-responsive">
+                            <table class="table table-centered mb-0 align-middle table-hover table-nowrap">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Invoice No</th>
+                                        <th>Job No</th>
+                                        <th>Party Name</th>
+                                        <th>Type</th>
+                                        <th>Grand Total</th>
+                                        <th style="width: 120px;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="saRecentInvoicesBody">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="float-end">
+                            <select id="saJobSharePeriod" class="form-select shadow-none form-select-sm">
+                                <option value="ThisMonth" selected>This Month</option>
+                                <option value="LastMonth">Last Month</option>
+                                <option value="ThisYear">This Year</option>
+                            </select>
+                        </div>
+                        <h4 class="card-title mb-4">Job Operations Share (All Companies)</h4>
+
+                        <div class="row" id="saJobSharePercentages">
+
+                        </div>
+
+                        <div class="mt-4">
+                            <div id="sa-job-operation-chart" class="apex-charts"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end row -->
+
+        <!-- Row 6: Recent Users + Users by Type -->
+        <div class="row">
+            <div class="col-xl-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="dropdown float-end">
+                            <a href="/Account/AdminUsers" class="btn btn-soft-primary btn-sm waves-effect">
+                                <i class="ri-user-settings-line align-middle me-1"></i> Manage Users
+                            </a>
+                        </div>
+                        <h4 class="card-title mb-4">Recently Registered Users</h4>
+
+                        <div class="table-responsive">
+                            <table class="table table-centered mb-0 align-middle table-hover table-nowrap">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>User Id</th>
+                                        <th>Name</th>
+                                        <th>User Type</th>
+                                        <th>Status</th>
+                                        <th>Registered On</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="saRecentUsersBody">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title mb-4">Users by Type</h4>
+
+                        <div class="row" id="saUserTypePercentages">
+
+                        </div>
+
+                        <div class="mt-4">
+                            <div id="sa-user-type-chart" class="apex-charts"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end row -->
+
+    </div>
+</div>
+
+@section Script {
+    <script src="~/assets/libs/apexcharts/apexcharts.min.js"></script>
+
+    <script>
+        // ========== Loader tracking ==========
+        (function () {
+            var trackedUrls = ['/Dashboard/GetSuperAdminDashboard', '/Dashboard/GetGlobalSalesPurchaseTrend', '/Dashboard/GetGlobalRevenueBillingTrend'];
+            var active = 0;
+
+            function showLoader() { try { $('#superAdminFullLoader').css('display', 'flex'); } catch (e) { } }
+            function hideLoader() { try { $('#superAdminFullLoader').hide(); } catch (e) { } }
+
+            try {
+                var $loader = $('#superAdminFullLoader');
+                if ($loader.length) { $loader.appendTo('body'); }
+            } catch (e) { }
+
+            showLoader();
+
+            $(document).on('ajaxSend.saLoader', function (e, jqXHR, settings) {
+                try {
+                    var url = settings && settings.url ? settings.url.toString() : '';
+                    trackedUrls.forEach(function (u) { if (url.indexOf(u) !== -1) active++; });
+                    if (active > 0) showLoader();
+                } catch (err) { }
+            });
+
+            $(document).on('ajaxComplete.saLoader', function (e, jqXHR, settings) {
+                try {
+                    var url = settings && settings.url ? settings.url.toString() : '';
+                    trackedUrls.forEach(function (u) { if (url.indexOf(u) !== -1) active = Math.max(0, active - 1); });
+                    if (active === 0) hideLoader();
+                } catch (err) { }
+            });
+
+            setTimeout(function () { if (active > 0) hideLoader(); }, 15000);
+        })();
+    </script>
+
+    <script>
+        $(function () {
+
+            // ========== Helpers ==========
+            function formatCurrency(amount) {
+                return 'Rs. ' + Number(amount || 0).toLocaleString('en-PK');
+            }
+
+            function applyTrend(elemId, trendText, trendClass) {
+                var $el = $(elemId);
+                $el.removeClass('trend-badge-success trend-badge-danger');
+                if (trendClass) $el.addClass(trendClass);
+                $el.find('.trend-text').text(trendText || '0%');
+
+                var $icon = $el.find('i');
+                if (trendText && trendText.toString().trim().startsWith('-')) {
+                    $icon.removeClass('ri-arrow-right-up-line').addClass('ri-arrow-right-down-line');
+                } else {
+                    $icon.removeClass('ri-arrow-right-down-line').addClass('ri-arrow-right-up-line');
+                }
+            }
+
+            // ========== Update: KPI Values ==========
+            function updateSystemKpis(kpis) {
+                if (!kpis) return;
+                $('#saTotalUsers').text(kpis.totalUsers ?? 0);
+                $('#saTotalAdminUsers').text(kpis.adminUsers ?? 0);
+                $('#saTotalAuthUsers').text(kpis.authUsers ?? 0);
+                $('#saTotalUnAuthUsers').text(kpis.unAuthUsers ?? 0);
+                $('#saActiveUsers').text(kpis.activeUsers ?? 0);
+                $('#saInactiveUsers').text(kpis.inactiveUsers ?? 0);
+                $('#saTotalCostCenters').text(kpis.totalCostCenters ?? 0);
+                $('#saActiveCostCenters').text(kpis.activeCostCenters ?? 0);
+                $('#saTotalCompanies').text(kpis.totalCompanies ?? 0);
+                $('#saTotalCustomers').text(kpis.totalCustomers ?? 0);
+                $('#saServiceProviders').text(kpis.totalServiceProviders ?? 0);
+                $('#saTotalParties').text((kpis.totalCustomers ?? 0) + (kpis.totalServiceProviders ?? 0));
+            }
+
+            function updateJobsStatistics(stat) {
+                if (!stat) return;
+                $('#saTotalJobs').text(stat.totalJobs ?? 0);
+                $('#saImportJobs').text(stat.importJobs ?? 0);
+                $('#saExportJobs').text(stat.exportJobs ?? 0);
+
+                applyTrend('#saTotalJobsTrend', stat.totalJobsTrendText, stat.totalJobsTrendClass);
+                applyTrend('#saImportJobsTrend', stat.importJobsTrendText, stat.importJobsTrendClass);
+                applyTrend('#saExportJobsTrend', stat.exportJobsTrendText, stat.exportJobsTrendClass);
+            }
+
+            function updateFinancialStatistics(stat) {
+                if (!stat) return;
+                $('#saSalesRevenueAmount').text(formatCurrency(stat.salesRevenue));
+                $('#saSpOutstandingAmount').text(formatCurrency(stat.spOutstanding));
+                $('#saNetCashInflowAmount').text(formatCurrency(stat.netCashInflow));
+
+                applyTrend('#saSalesRevenueTrend', stat.salesTrendText, stat.salesTrendClass);
+                applyTrend('#saSpOutstandingTrend', stat.spTrendText, stat.spTrendClass);
+                applyTrend('#saNetCashInflowTrend', stat.netCashTrendText, stat.netCashTrendClass);
+            }
+
+            // ========== Update: Recent Invoices ==========
+            function updateRecentInvoices(data) {
+                if (!data || !Array.isArray(data)) return;
+
+                if (data.length === 0) {
+                    let emptyHtml = `
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="ri-inbox-line display-6 d-block mb-2"></i>
+                                No Recent Invoices Found
+                            </td>
+                        </tr>`;
+                    $('#saRecentInvoicesBody').html(emptyHtml);
+                    return;
+                }
+
+                let html = '';
+                data.forEach(function (item) {
+                    let typeBadge = item.Type === 'Sales'
+                        ? '<span class="badge badge-soft-primary">Sales</span>'
+                        : '<span class="badge badge-soft-warning">Purchase</span>';
+
+                    let statusName = 'Unknown', statusClass = 'text-secondary';
+                    switch (parseInt(item.Status)) {
+                        case 1: statusName = 'Paid'; statusClass = 'text-success'; break;
+                        case 0: statusName = 'Unpaid'; statusClass = 'text-danger'; break;
+                        case 2: statusName = 'Partially Paid'; statusClass = 'text-warning'; break;
+                        default: statusName = 'Unknown'; statusClass = 'text-secondary';
+                    }
+
+                    html += `
+                        <tr>
+                            <td><h6 class="mb-0">${item.InvoiceNo || ''}</h6></td>
+                            <td>${item.JobNo || ''}</td>
+                            <td>${item.PartyName || ''}</td>
+                            <td>${typeBadge}</td>
+                            <td>Rs. ${Number(item.GrandTotal || 0).toLocaleString('en-PK', { minimumFractionDigits: 2 })}</td>
+                            <td>
+                                <div class="font-size-13">
+                                    <i class="ri-checkbox-blank-circle-fill font-size-10 ${statusClass} align-middle me-2"></i>
+                                    ${statusName}
+                                </div>
+                            </td>
+                        </tr>`;
+                });
+
+                $('#saRecentInvoicesBody').html(html);
+            }
+
+            // ========== Update: Job Operations Share (Donut) ==========
+            let saDonutChart = null;
+
+            function updateJobOperationsShare(data) {
+                if (!data || !Array.isArray(data)) return;
+
+                const $chartContainer = $('#sa-job-operation-chart');
+                const $percentContainer = $('#saJobSharePercentages');
+
+                if (data.length === 0) {
+                    if (saDonutChart) { saDonutChart.destroy(); saDonutChart = null; }
+                    $percentContainer.html('');
+                    let emptyHtml = `
+                        <div class="text-center py-5 text-muted">
+                            <i class="ri-pie-chart-line display-4 d-block mb-2 text-secondary opacity-50"></i>
+                            <h6 class="text-muted fw-normal mb-1">No Job Operations Data Found</h6>
+                        </div>`;
+                    $chartContainer.html(emptyHtml);
+                    return;
+                }
+
+                let percentHtml = '';
+                data.forEach(function (item) {
+                    percentHtml += `
+                        <div class="col-6">
+                            <div class="text-center mt-4">
+                                <h5>${item.Percentage}%</h5>
+                                <p class="mb-2 text-truncate">${item.Label}</p>
+                            </div>
+                        </div>`;
+                });
+                $percentContainer.html(percentHtml);
+
+                const series = data.map(x => x.Percentage);
+                const labels = data.map(x => x.Label);
+
+                if ($chartContainer.find('.text-center').length > 0) {
+                    $chartContainer.html('');
+                }
+
+                if (saDonutChart) {
+                    saDonutChart.updateOptions({ series: series, labels: labels });
+                } else {
+                    saDonutChart = new ApexCharts(document.querySelector("#sa-job-operation-chart"), {
+                        series: series,
+                        chart: { type: 'donut', height: 300 },
+                        labels: labels,
+                        legend: { position: 'bottom' },
+                        dataLabels: { enabled: false },
+                        colors: ['#5b73e8', '#34c38f', '#f1b44c', '#f46a6a', '#17a2b8']
+                    });
+                    saDonutChart.render();
+                }
+            }
+
+            // ========== Update: Users by Type (Donut) ==========
+            let saUserTypeChart = null;
+
+            function updateUsersByType(data) {
+                if (!data || !Array.isArray(data)) return;
+
+                const $chartContainer = $('#sa-user-type-chart');
+                const $percentContainer = $('#saUserTypePercentages');
+
+                if (data.length === 0) {
+                    if (saUserTypeChart) { saUserTypeChart.destroy(); saUserTypeChart = null; }
+                    $percentContainer.html('');
+                    let emptyHtml = `
+                        <div class="text-center py-5 text-muted">
+                            <i class="ri-user-line display-4 d-block mb-2 text-secondary opacity-50"></i>
+                            <h6 class="text-muted fw-normal mb-1">No Users Found</h6>
+                        </div>`;
+                    $chartContainer.html(emptyHtml);
+                    return;
+                }
+
+                let percentHtml = '';
+                data.forEach(function (item) {
+                    percentHtml += `
+                        <div class="col-6">
+                            <div class="text-center mt-4">
+                                <h5>${item.Count}</h5>
+                                <p class="mb-2 text-truncate">${item.Label}</p>
+                            </div>
+                        </div>`;
+                });
+                $percentContainer.html(percentHtml);
+
+                const series = data.map(x => x.Count);
+                const labels = data.map(x => x.Label);
+
+                if ($chartContainer.find('.text-center').length > 0) {
+                    $chartContainer.html('');
+                }
+
+                if (saUserTypeChart) {
+                    saUserTypeChart.updateOptions({ series: series, labels: labels });
+                } else {
+                    saUserTypeChart = new ApexCharts(document.querySelector("#sa-user-type-chart"), {
+                        series: series,
+                        chart: { type: 'donut', height: 300 },
+                        labels: labels,
+                        legend: { position: 'bottom' },
+                        dataLabels: { enabled: false },
+                        colors: ['#5b73e8', '#34c38f', '#f1b44c', '#f46a6a', '#17a2b8']
+                    });
+                    saUserTypeChart.render();
+                }
+            }
+
+            // ========== Update: Recent Users ==========
+            function updateRecentUsers(data) {
+                if (!data || !Array.isArray(data)) return;
+
+                if (data.length === 0) {
+                    let emptyHtml = `
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="ri-user-line display-6 d-block mb-2"></i>
+                                No Users Found
+                            </td>
+                        </tr>`;
+                    $('#saRecentUsersBody').html(emptyHtml);
+                    return;
+                }
+
+                let html = '';
+                data.forEach(function (item) {
+                    let statusHtml = item.IsActive === true
+                        ? '<span class="user-status-dot status-active"></span>Active'
+                        : '<span class="user-status-dot status-inactive"></span>Inactive';
+
+                    let createdDate = item.CreatedOn ? new Date(item.CreatedOn).toLocaleDateString('en-GB') : '-';
+
+                    html += `
+                        <tr>
+                            <td><h6 class="mb-0">${item.UserId || ''}</h6></td>
+                            <td>${item.UserName || ''}</td>
+                            <td>${item.TypeName || '-'}</td>
+                            <td><span class="font-size-13">${statusHtml}</span></td>
+                            <td>${createdDate}</td>
+                        </tr>`;
+                });
+
+                $('#saRecentUsersBody').html(html);
+            }
+
+            // ========== Charts: Area (Sales vs Purchases) ==========
+            function renderAreaChart(labels, sales, purchases) {
+                var chartEl = document.querySelector('#sa_area_chart');
+                if (!chartEl) return;
+
+                if (chartEl._apexChart) {
+                    try { chartEl._apexChart.destroy(); } catch (e) { }
+                }
+
+                var options = {
+                    series: [
+                        { name: 'Sales', data: sales },
+                        { name: 'Purchases', data: purchases }
+                    ],
+                    chart: { toolbar: { show: false }, height: 350, type: 'area' },
+                    dataLabels: { enabled: false },
+                    yaxis: { labels: { formatter: function (e) { return e; } }, tickAmount: 4, min: 0 },
+                    stroke: { curve: 'smooth', width: 2 },
+                    grid: { show: true, borderColor: '#90A4AE', strokeDashArray: 0, position: 'back' },
+                    legend: { show: true },
+                    colors: ['#0f9cf3', '#6fd088'],
+                    labels: labels
+                };
+
+                var chart = new ApexCharts(chartEl, options);
+                chart.render();
+                chartEl._apexChart = chart;
+            }
+
+            function fetchTrend(period) {
+                var data = { period: period || 'ThisYear' };
+
+                $.getJSON('/Dashboard/GetGlobalSalesPurchaseTrend', data)
+                    .done(function (resp) {
+                        if (resp && !resp.error) {
+                            renderAreaChart(resp.labels || [], resp.sales || [], resp.purchases || []);
+                            if (typeof resp.salesRangeTotal !== 'undefined') $('#saSalesTotal').text(formatCurrency(resp.salesRangeTotal));
+                            if (typeof resp.purchasesRangeTotal !== 'undefined') $('#saPurchasesTotal').text(formatCurrency(resp.purchasesRangeTotal));
+                            if (typeof resp.netRange !== 'undefined') $('#saNetTotal').text(formatCurrency(resp.netRange));
+                        } else {
+                            console.error('Failed to load trend:', resp && resp.message);
+                        }
+                    })
+                    .fail(function (xhr, status, err) {
+                        console.error('AJAX error fetching trend:', err);
+                    });
+            }
+
+            // ========== Charts: Column + Line (Revenue vs Collection) ==========
+            function renderColumnLineChart(labels, invoiced, collected) {
+                var chartEl = document.querySelector('#sa_column_line_chart');
+                if (!chartEl) return;
+
+                if (chartEl._apexChart) {
+                    try { chartEl._apexChart.destroy(); } catch (e) { }
+                }
+
+                var options = {
+                    series: [
+                        { name: 'Invoiced', type: 'column', data: invoiced },
+                        { name: 'Collected', type: 'line', data: collected }
+                    ],
+                    chart: { height: 350, type: 'line', toolbar: { show: false } },
+                    stroke: { width: [0, 2.5], curve: 'straight' },
+                    plotOptions: { bar: { horizontal: false, columnWidth: '34%' } },
+                    dataLabels: { enabled: false },
+                    markers: { size: [0, 3.5] },
+                    legend: { show: false },
+                    yaxis: { labels: { formatter: function (e) { return e; } }, tickAmount: 5, min: 0 },
+                    colors: ['#0f9cf3', '#6fd088'],
+                    labels: labels
+                };
+
+                var chart = new ApexCharts(chartEl, options);
+                chart.render();
+                chartEl._apexChart = chart;
+            }
+
+            function fetchRevenue(period) {
+                var data = { period: period || 'ThisYear' };
+
+                $.getJSON('/Dashboard/GetGlobalRevenueBillingTrend', data)
+                    .done(function (resp) {
+                        if (resp && !resp.error) {
+                            renderColumnLineChart(resp.labels || [], resp.invoiced || [], resp.collected || []);
+                            if (typeof resp.totalInvoiced !== 'undefined') $('#saTotalInvoiced').text(formatCurrency(resp.totalInvoiced));
+                            if (typeof resp.totalCollected !== 'undefined') $('#saCollectedCash').text(formatCurrency(resp.totalCollected));
+                            if (typeof resp.remaining !== 'undefined') $('#saRemainingRecovery').text(formatCurrency(resp.remaining));
+                        } else {
+                            console.error('Failed to load revenue:', resp && resp.message);
+                        }
+                    })
+                    .fail(function (xhr, status, err) {
+                        console.error('AJAX error fetching revenue:', err);
+                    });
+            }
+
+            // ========== Main Load ==========
+            function loadDashboard() {
+                const period = $('#saJobSharePeriod').val() || 'ThisMonth';
+
+                $.ajax({
+                    url: '/Dashboard/GetSuperAdminDashboard',
+                    type: 'GET',
+                    data: { period: period },
+                    cache: false,
+                    success: function (resp) {
+                        if (!resp || resp.error) {
+                            console.error(resp && resp.message || 'Failed to load dashboard');
+                            return;
+                        }
+
+                        updateSystemKpis(resp.systemKpis);
+                        updateJobsStatistics(resp.jobsStatistics);
+                        updateFinancialStatistics(resp.financialStatistics);
+                        updateRecentInvoices(resp.recentInvoices);
+                        updateJobOperationsShare(resp.jobOperationsShare);
+                        updateUsersByType(resp.usersByType);
+                        updateRecentUsers(resp.recentUsers);
+                    },
+                    error: function (xhr) {
+                        console.error('Dashboard load failed', xhr);
+                    }
+                });
+            }
+
+            // ========== Events ==========
+            loadDashboard();
+            fetchTrend('ThisYear');
+            fetchRevenue('ThisYear');
+
+            $('#saJobSharePeriod').on('change', function () {
+                loadDashboard();
+            });
+
+            $(document).on('click', '.sa-revenue-period', function (e) {
+                e.preventDefault();
+                var period = $(this).data('period') || 'ThisYear';
+                var label = $(this).text().trim();
+                $('#saRevenuePeriodLabel').html(label + ' <i class="mdi mdi-chevron-down ms-1"></i>');
+
+                fetchRevenue(period);
+                fetchTrend(period);
+            });
+
+            // Auto refresh every 60 seconds
+            setInterval(loadDashboard, 60000);
+        });
+    </script>
+}

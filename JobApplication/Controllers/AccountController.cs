@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using BusinessLogic.Helper;
 using Microsoft.AspNetCore.Http;
+using JobApplication.Helpers;
 
 namespace JobApplication.Controllers
 {
@@ -14,11 +15,13 @@ namespace JobApplication.Controllers
     {
         private readonly IAccount _account;
         private readonly ISessionHelper _session;
+        private readonly AppDbContext _context;
 
-        public AccountController(IAccount account, ISessionHelper session) : base(session)
+        public AccountController(IAccount account, ISessionHelper session, AppDbContext context) : base(session)
         {
             _account = account;
             _session = session;
+            _context = context;
         }
 
         [AllowAnonymous]
@@ -35,11 +38,25 @@ namespace JobApplication.Controllers
                 return RedirectToAction("Login", "Home");
             }
 
+            if (model == null)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = "Invalid request. No user data received." }),
+                    "application/json");
+            }
+
             //var ids = model.CostCenterIds;
 
             // Handle Photo Upload
             if (PhotoFile != null && PhotoFile.Length > 0)
             {
+                if (!FileUploadHelper.IsAllowed(PhotoFile, out string uploadError))
+                {
+                    return Content(
+                        JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = uploadError }),
+                        "application/json");
+                }
+
                 string folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/users");
                 if (!Directory.Exists(folder))
                     Directory.CreateDirectory(folder);
@@ -107,6 +124,28 @@ namespace JobApplication.Controllers
             }
         }
 
+        [AllowAnonymous]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        public async Task<IActionResult> VerifySecurityAnswer(string userId, string answer)
+        {
+            var result = await _account.VerifySecurityAnswer(userId, answer);
+            return Content(JsonConvert.SerializeObject(result), "application/json");
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(string userId, string newPassword)
+        {
+            var result = await _account.ResetPassword(userId, newPassword);
+            return Content(JsonConvert.SerializeObject(result), "application/json");
+        }
+
         public IActionResult Index()
         {
             return View();
@@ -131,6 +170,46 @@ namespace JobApplication.Controllers
         {
             _session.Logout();
             return Content(JsonConvert.SerializeObject("000"), "application/json");
+        }
+
+        public IActionResult Lock()
+        {
+            _session.IsLocked = true;
+            return RedirectToAction("LockScreen", "Account");
+        }
+
+        public IActionResult LockScreen()
+        {
+            if (_session.LoginId == 0)
+            {
+                return RedirectToAction("Login", "Home");
+            }
+
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Unlock(string password)
+        {
+            if (_session.LoginId == 0)
+            {
+                return Json(new { errorCode = 401, errorMessage = "Session expired" });
+            }
+
+            if (string.IsNullOrEmpty(password))
+            {
+                return Json(new { errorCode = 400, errorMessage = "Please enter your password" });
+            }
+
+            bool valid = await _account.VerifyPassword(password);
+
+            if (valid)
+            {
+                _session.IsLocked = false;
+                return Json(new { errorCode = 200, data = _session.UserType });
+            }
+
+            return Json(new { errorCode = 401, errorMessage = "Invalid password" });
         }
 
         public IActionResult Profile()
@@ -165,8 +244,22 @@ namespace JobApplication.Controllers
                 });
             }
 
+            if (model == null)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = "Invalid request. No user data received." }),
+                    "application/json");
+            }
+
             if (PhotoFile != null && PhotoFile.Length > 0)
             {
+                if (!FileUploadHelper.IsAllowed(PhotoFile, out string uploadError))
+                {
+                    return Content(
+                        JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = uploadError }),
+                        "application/json");
+                }
+
                 string folder = Path.Combine(
                     Directory.GetCurrentDirectory(),
                     "wwwroot/uploads/users");
@@ -189,6 +282,259 @@ namespace JobApplication.Controllers
 
             return Content(
                 JsonConvert.SerializeObject(result),
+                "application/json");
+        }
+
+        // ----------------------------------------------------------------
+        // Two-Factor Authentication (TOTP)
+        // ----------------------------------------------------------------
+
+        [AllowAnonymous]
+        public IActionResult TwoFactor()
+        {
+            if (_session.Pending2FAUserId == 0)
+            {
+                return RedirectToAction("Login", "Home");
+            }
+
+            return View();
+        }
+
+        [AllowAnonymous]
+        public async Task<ContentResult> VerifyTwoFactor([FromBody] TwoFactorCodeRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.code))
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = "Verification code is required." }),
+                    "application/json");
+            }
+
+            int userId = _session.Pending2FAUserId;
+            if (userId == 0)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 401, errorMessage = "No pending login found. Please login again." }),
+                    "application/json");
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 404, errorMessage = "User not found." }),
+                    "application/json");
+            }
+
+            bool valid = !string.IsNullOrWhiteSpace(user.TwoFactorSecretKey)
+                && TotpHelper.ValidateTotp(user.TwoFactorSecretKey, request.code);
+
+            if (!valid && !string.IsNullOrWhiteSpace(user.TwoFactorRecoveryCodes))
+            {
+                string stored = user.TwoFactorRecoveryCodes;
+                valid = TotpHelper.TryConsumeRecoveryCode(ref stored, request.code);
+                if (valid)
+                {
+                    user.TwoFactorRecoveryCodes = stored;
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            if (!valid)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 401, errorMessage = "Invalid verification code." }),
+                    "application/json");
+            }
+
+            _session.Pending2FASecret = "";
+
+            var result = await _account.CompleteTwoFactorLogin();
+            return Content(JsonConvert.SerializeObject(result), "application/json");
+        }
+
+        [AllowAnonymous]
+        public async Task<ContentResult> GenerateTwoFactorSecret()
+        {
+            int userId = _session.Pending2FAUserId > 0 ? _session.Pending2FAUserId : _session.LoginId;
+            if (userId == 0)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 401, errorMessage = "No active user found." }),
+                    "application/json");
+            }
+
+            var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 404, errorMessage = "User not found." }),
+                    "application/json");
+            }
+
+            var secret = TotpHelper.GenerateSecret();
+            string accountName = string.IsNullOrWhiteSpace(user.UserId) ? $"user{userId}" : user.UserId.Trim();
+
+            _session.Pending2FASecret = secret;
+
+            string uri = TotpHelper.GetProvisioningUri("C&F Management System", accountName, secret);
+            string qr = "data:image/png;base64," + Convert.ToBase64String(ZatcaQrHelper.GeneratePng(uri, 10));
+
+            return Content(
+                JsonConvert.SerializeObject(new
+                {
+                    errorCode = 200,
+                    secret = secret,
+                    otpauthUri = uri,
+                    qr = qr
+                }),
+                "application/json");
+        }
+
+        [AllowAnonymous]
+        public async Task<ContentResult> EnableTwoFactor([FromBody] TwoFactorCodeRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.code))
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = "Verification code is required." }),
+                    "application/json");
+            }
+
+            string pendingSecret = _session.Pending2FASecret;
+            if (string.IsNullOrWhiteSpace(pendingSecret))
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = "2FA setup session expired. Please try again." }),
+                    "application/json");
+            }
+
+            if (!TotpHelper.ValidateTotp(pendingSecret, request.code))
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 401, errorMessage = "Invalid verification code." }),
+                    "application/json");
+            }
+
+            int userId = _session.Pending2FAUserId > 0 ? _session.Pending2FAUserId : _session.LoginId;
+            if (userId == 0)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 401, errorMessage = "No active user found." }),
+                    "application/json");
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 404, errorMessage = "User not found." }),
+                    "application/json");
+            }
+
+            var recoveryCodes = TotpHelper.GenerateRecoveryCodes();
+
+            user.TwoFactorEnabled = true;
+            user.TwoFactorSecretKey = pendingSecret;
+            user.TwoFactorRecoveryCodes = string.Join(",", recoveryCodes);
+            await _context.SaveChangesAsync();
+
+            _session.Pending2FASecret = "";
+
+            return Content(
+                JsonConvert.SerializeObject(new
+                {
+                    errorCode = 200,
+                    recoveryCodes = recoveryCodes
+                }),
+                "application/json");
+        }
+
+        [AllowAnonymous]
+        public async Task<ContentResult> DisableTwoFactor([FromBody] TwoFactorCodeRequest request)
+        {
+            if (_session.LoginId == 0)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 401, errorMessage = "Session expired." }),
+                    "application/json");
+            }
+
+            if (request == null || string.IsNullOrWhiteSpace(request.code))
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = "Verification code is required." }),
+                    "application/json");
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == _session.LoginId);
+            if (user == null)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 404, errorMessage = "User not found." }),
+                    "application/json");
+            }
+
+            bool valid = !string.IsNullOrWhiteSpace(user.TwoFactorSecretKey)
+                && TotpHelper.ValidateTotp(user.TwoFactorSecretKey, request.code);
+
+            if (!valid && !string.IsNullOrWhiteSpace(user.TwoFactorRecoveryCodes))
+            {
+                string stored = user.TwoFactorRecoveryCodes;
+                valid = TotpHelper.TryConsumeRecoveryCode(ref stored, request.code);
+                if (valid)
+                {
+                    user.TwoFactorRecoveryCodes = stored;
+                }
+            }
+
+            if (!valid)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 401, errorMessage = "Invalid verification code." }),
+                    "application/json");
+            }
+
+            user.TwoFactorEnabled = false;
+            user.TwoFactorSecretKey = null;
+            user.TwoFactorRecoveryCodes = null;
+            await _context.SaveChangesAsync();
+
+            return Content(
+                JsonConvert.SerializeObject(new { errorCode = 200, errorMessage = "Two-factor authentication disabled." }),
+                "application/json");
+        }
+
+        [AllowAnonymous]
+        public async Task<ContentResult> TwoFactorStatus()
+        {
+            int userId = _session.Pending2FAUserId > 0 ? _session.Pending2FAUserId : _session.LoginId;
+            if (userId == 0)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 401, errorMessage = "No active user found." }),
+                    "application/json");
+            }
+
+            var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 404, errorMessage = "User not found." }),
+                    "application/json");
+            }
+
+            var twoFactorSetting = await _context.Settings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.SettingKey == "EnableTwoFactorAuth");
+
+            return Content(
+                JsonConvert.SerializeObject(new
+                {
+                    errorCode = 200,
+                    enabled = user.TwoFactorEnabled == true,
+                    globallyEnabled = twoFactorSetting?.IsActive == true
+                }),
                 "application/json");
         }
     }

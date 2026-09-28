@@ -9,6 +9,13 @@ namespace BusinessLogic.Interfaces
     {
         Task<dynamic> Login(string username, string password);
 
+        Task<dynamic> CompleteTwoFactorLogin();
+
+        Task<bool> VerifyPassword(string password);
+
+        Task<dynamic> VerifySecurityAnswer(string userId, string answer);
+        Task<dynamic> ResetPassword(string userId, string newPassword);
+
         #region User
         Task<dynamic> GetUser(IList<QueryFilters> filters);
         Task<dynamic> SaveUser(User model);

@@ -11,11 +11,16 @@ namespace BusinessLogic.Interfaces
     {
         public Task<dynamic> Save(PurchaseInvoiceVM model, int LoginId);
         public Task<dynamic> GetInvoices(List<QueryFilters> filters);
-        public Task<dynamic> GetInvoiceById(int InvoiceId, int ServiceProviderId);
+        public Task<byte[]> ExportExcel(IList<QueryFilters> filters);
+        public Task<byte[]> ExportPdf(IList<QueryFilters> filters);
+        public Task<dynamic> GetInvoiceById(int InvoiceId, int ServiceProviderId, int? ReferenceId = null);
+        public Task<dynamic> RegenerateInvoices(DateTime? FromDate, DateTime? ToDate);
         public Task<dynamic> SavePurchaseVoucher(PurchaseVoucher model);
+        public Task<dynamic> GetPaymentHistory(int InvoiceId);
         public Task<dynamic> EditPurchaseInvoice(int invoiceId);
         public Task<dynamic> GetSalesReport(IList<QueryFilters> filters);
         public Task<dynamic> GetServiceProviderStatement(IList<QueryFilters> filters);
+        public Task<dynamic> GetAgingReport(IList<QueryFilters> filters);
         public Task<bool> IsInvoiceEditable(int InvoiceId);
         public Task<dynamic> GetNextCreditNoteNumber();
         public Task<dynamic> GetNextPurchaseInvoiceNumber();

@@ -76,7 +76,7 @@
                                 </div>
 
 
-                                <div class="row mb-3" style="display:none;">
+                                <div class="row mb-3">
 
                                     <div class="col-md-12 text-end">
 
@@ -301,6 +301,72 @@
     </div>
 </div>
 
+<div class="modal fade" id="paymentHistoryModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-history me-2"></i> Payment History (PV)
+                </h5>
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Invoice No:</strong> <span id="phInvoiceNo" class="text-primary fw-semibold">-</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Job No:</strong> <span id="phJobNo" class="text-primary fw-semibold">-</span>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <strong>Total Paid:</strong> <span id="phTotalReceived" class="text-success fw-semibold">-</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm table-striped align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40px;">#</th>
+                                <th>Date</th>
+                                <th>PV Number</th>
+                                <th>Payment Mode</th>
+                                <th class="text-end">Amount</th>
+                                <th>BL No</th>
+                                <th>Description</th>
+                                <th>Entered By</th>
+                                <th>Entered On</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentHistoryTableBody">
+                            <tr>
+                                <td colspan="9" class="text-center py-4 text-muted">
+                                    Loading...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="modal-footer justify-content-center">
+                <button type="button"
+                        class="btn btn-secondary px-5"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 
 @section Script {
 
@@ -332,6 +398,14 @@
             });
 
             loadRecords();
+
+            $("#btnExportExcel").click(function () {
+                exportInvoices("excel");
+            });
+
+            $("#btnExportPdf").click(function () {
+                exportInvoices("pdf");
+            });
 
             $(document).on("click", ".btnPurchaseVoucher", function () {
 
@@ -411,6 +485,98 @@
 
 
             });
+
+            $(document).on("click", ".btnPurchasePaymentHistory", function () {
+
+                const invoiceId = $(this).data("invoiceid");
+
+                $("#phInvoiceNo").text($(this).data("invoiceno") || "-");
+                $("#phJobNo").text($(this).data("jobno") || "-");
+                $("#phTotalReceived").text("-");
+                $("#paymentHistoryTableBody").html(
+                    '<tr><td colspan="9" class="text-center py-4 text-muted">Loading...</td></tr>'
+                );
+
+                $.ajax({
+                    url: "/Invoice/GetPurchasePaymentHistory",
+                    type: "GET",
+                    data: { invoiceId: invoiceId },
+                    success: function (data) {
+
+                        if (data.errorCode != 200) {
+                            $("#paymentHistoryTableBody").html(
+                                '<tr><td colspan="9" class="text-center py-4 text-danger">' +
+                                (data.data || "Unable to load payment history") +
+                                '</td></tr>'
+                            );
+                            return;
+                        }
+
+                        if (data.paidAmount != null) {
+                            $("#phTotalReceived").text(formatCurrency(data.paidAmount));
+                        }
+
+                        const payments = data.data || [];
+
+                        if (payments.length === 0) {
+                            $("#paymentHistoryTableBody").html(
+                                '<tr><td colspan="9" class="text-center py-4 text-muted">No payments found against this invoice</td></tr>'
+                            );
+                        } else {
+                            let html = "";
+
+                            $.each(payments, function (i, item) {
+                                html += `<tr>
+                                    <td>${i + 1}</td>
+                                    <td>${formatDate(item.PaymentDate)}</td>
+                                    <td class="fw-semibold">${item.Pvnumber}</td>
+                                    <td>${item.PaymentMode}</td>
+                                    <td class="text-end fw-semibold">${formatCurrency(item.Amount)}</td>
+                                    <td>${item.BlNo || "-"}</td>
+                                    <td>${item.Description || "-"}</td>
+                                    <td>${item.CreatedByName || "-"}</td>
+                                    <td>${formatDateTime(item.CreatedOn)}</td>
+                                </tr>`;
+                            });
+
+                            $("#paymentHistoryTableBody").html(html);
+                        }
+
+                        const historyModal = new bootstrap.Modal(
+                            document.getElementById('paymentHistoryModal')
+                        );
+
+                        historyModal.show();
+                    },
+                    error: function () {
+                        $("#paymentHistoryTableBody").html(
+                            '<tr><td colspan="9" class="text-center py-4 text-danger">Unable to load payment history</td></tr>'
+                        );
+
+                        const historyModal = new bootstrap.Modal(
+                            document.getElementById('paymentHistoryModal')
+                        );
+
+                        historyModal.show();
+                    }
+                });
+            });
+
+            function formatDateTime(dt) {
+                if (!dt) return "-";
+
+                const d = new Date(dt);
+
+                if (isNaN(d.getTime())) return dt;
+
+                return d.toLocaleString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
 
             $(document).on("click", ".btnCancelInvoice", function () {
 
@@ -814,6 +980,19 @@
                                    </li>`
                                 : '';
 
+                            // Payment History Action - only where payment exists
+                            const purchasePaymentHistoryAction = hasPayment
+                                ? `<li>
+                                    <button type="button"
+                                            class="dropdown-item btnPurchasePaymentHistory"
+                                            data-invoiceid="${row.InvoiceId}"
+                                            data-invoiceno="${row.InvoiceNo}"
+                                            data-jobno="${row.JobNo || ''}">
+                                        <i class="fas fa-history text-primary me-2"></i> Payment History
+                                    </button>
+                                   </li>`
+                                : '';
+
                             // Cancel Action Logic
                             const cancelAction = hasServiceProvider
                                 ? `<li>
@@ -867,6 +1046,7 @@
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                             ${editAction}
                                             ${paymentAction}
+                                            ${purchasePaymentHistoryAction}
                                             ${cancelAction}
                                             ${creditNoteAction}
                                         </ul>
@@ -1097,6 +1277,23 @@
 
         $('#filterFromDate').val(formatDateFilter(firstDay));
         $('#filterToDate').val(formatDateFilter(lastDay));
+    }
+
+    function exportInvoices(type) {
+
+        var params = {
+            serviceProviderId: $("#filterServiceProvider").val() || "",
+            fromDate: $("#filterFromDate").val() || "",
+            toDate: $("#filterToDate").val() || "",
+            invoiceNo: $("#filterInvoiceNo").val() || "",
+            jobNo: $("#filterJobNo").val() || ""
+        };
+
+        var url = type === "excel"
+            ? "/Invoice/DownloadPurchaseInvoicesExcel"
+            : "/Invoice/DownloadPurchaseInvoicesPdf";
+
+        window.location.href = url + "?" + $.param(params);
     }
 
     </script>

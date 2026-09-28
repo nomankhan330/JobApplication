@@ -149,6 +149,8 @@ function redirectAction(value) {
 
 function applyGlobalInputRules() {
 
+    applyGlobalFileRules();
+
     // CNIC Mask
     $("[data-mask='cnic']").mask("00000-0000000-0");
 
@@ -190,4 +192,48 @@ function applyGlobalInputRules() {
         }
     });
 
+}
+
+function applyGlobalFileRules() {
+
+    const allowedExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg",
+        "pdf", "doc", "docx", "xls", "xlsx", "txt", "csv"];
+
+    $("input[type='file']").each(function () {
+        const $input = $(this);
+
+        if ($input.data("globalFileRuleBound")) {
+            return;
+        }
+
+        $input.data("globalFileRuleBound", true);
+
+        const maxMb = parseFloat($input.attr("data-file-maxsize") || "5");
+
+        if (!$input.attr("accept")) {
+            $input.attr("accept", "image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv");
+        }
+
+        $input.on("change", function () {
+            const file = this.files && this.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            const maxSize = maxMb * 1024 * 1024;
+            const ext = (file.name.split(".").pop() || "").toLowerCase();
+
+            if (file.size > maxSize) {
+                showMessage("File size must not exceed " + maxMb + " MB", "error");
+                this.value = "";
+                return;
+            }
+
+            if (allowedExtensions.indexOf(ext) === -1) {
+                showMessage("Only image and document formats are allowed", "error");
+                this.value = "";
+            }
+        });
+    });
 }

@@ -65,6 +65,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<SalesInvoiceDetail> SalesInvoiceDetails { get; set; }
 
+    public virtual DbSet<Setting> Settings { get; set; }
+
     public virtual DbSet<ShipmentMode> ShipmentModes { get; set; }
 
     public virtual DbSet<ShipmentStatus> ShipmentStatuses { get; set; }
@@ -182,6 +184,8 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.Id, "IX_Customer_Id");
 
+            entity.HasIndex(e => new { e.ReferenceId, e.TypeId }, "IX_Customer_ReferenceId_TypeId");
+
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.AccountNumber)
                 .HasMaxLength(50)
@@ -236,13 +240,27 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("JobImportMaster");
 
+            entity.HasIndex(e => e.BlNo, "IX_JobImportMaster_BlNo");
+
             entity.HasIndex(e => e.CostCenterId, "IX_JobImportMaster_CostCenterId");
 
             entity.HasIndex(e => new { e.CostCenterId, e.JobDate }, "IX_JobImportMaster_CostCenter_Date");
 
+            entity.HasIndex(e => e.CreatedBy, "IX_JobImportMaster_CreatedBy");
+
+            entity.HasIndex(e => e.CreatedOn, "IX_JobImportMaster_CreatedOn");
+
             entity.HasIndex(e => e.JobDate, "IX_JobImportMaster_JobDate");
 
             entity.HasIndex(e => e.Id, "IX_JobImportMaster_Optimization");
+
+            entity.HasIndex(e => new { e.ReferenceId, e.CreatedBy, e.CreatedOn }, "IX_JobImportMaster_Ref_CreatedBy");
+
+            entity.HasIndex(e => e.ReferenceId, "IX_JobImportMaster_ReferenceId");
+
+            entity.HasIndex(e => e.ShipmentType, "IX_JobImportMaster_ShipmentType");
+
+            entity.HasIndex(e => new { e.ReferenceId, e.JobNumber }, "IX_JobImportMasters_Ref_JobNumber");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.AddInvoiceNo).HasMaxLength(100);
@@ -272,6 +290,8 @@ public partial class AppDbContext : DbContext
             entity.ToTable("JobImportPayment");
 
             entity.HasIndex(e => e.JobImportMasterId, "IX_JobImportPayment_JobImportMasterId");
+
+            entity.HasIndex(e => new { e.JobImportMasterId, e.InvoiceNo }, "IX_JobImportPayment_Master_Invoice");
 
             entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.CreatedOn).HasColumnType("datetime");
@@ -409,7 +429,15 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("PurchaseInvoice");
 
+            entity.HasIndex(e => e.CreatedOn, "IX_PurchaseInvoice_CreatedOn");
+
+            entity.HasIndex(e => e.InvoiceDate, "IX_PurchaseInvoice_InvoiceDate");
+
             entity.HasIndex(e => e.InvoiceNo, "IX_PurchaseInvoice_InvoiceNo");
+
+            entity.HasIndex(e => new { e.ReferenceId, e.InvoiceDate, e.CreatedOn }, "IX_PurchaseInvoice_Ref_Date");
+
+            entity.HasIndex(e => e.ReferenceId, "IX_PurchaseInvoice_ReferenceId");
 
             entity.HasIndex(e => new { e.ServiceProviderId, e.InvoiceDate }, "IX_PurchaseInvoice_ServiceProviderId_InvoiceDate");
 
@@ -526,11 +554,19 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("SalesInvoice");
 
+            entity.HasIndex(e => e.CreatedOn, "IX_SalesInvoice_CreatedOn");
+
             entity.HasIndex(e => new { e.CustomerId, e.InvoiceDate }, "IX_SalesInvoice_CustomerId_InvoiceDate");
 
             entity.HasIndex(e => e.CustomerId, "IX_SalesInvoice_CustomerId_InvoiceId");
 
+            entity.HasIndex(e => e.InvoiceDate, "IX_SalesInvoice_InvoiceDate");
+
             entity.HasIndex(e => e.JobId, "IX_SalesInvoice_JobId");
+
+            entity.HasIndex(e => new { e.ReferenceId, e.InvoiceDate, e.CreatedOn }, "IX_SalesInvoice_Ref_Date");
+
+            entity.HasIndex(e => e.ReferenceId, "IX_SalesInvoice_ReferenceId");
 
             entity.HasIndex(e => e.InvoiceNo, "UQ_SalesInvoice_InvoiceNo").IsUnique();
 
@@ -576,6 +612,18 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.VatPercent).HasColumnType("decimal(18, 2)");
         });
 
+        modelBuilder.Entity<Setting>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Settings__3214EC0708DD489C");
+
+            entity.HasIndex(e => e.SettingKey, "UQ_Settings_SettingKey").IsUnique();
+
+            entity.Property(e => e.CreatedOn).HasColumnType("datetime");
+            entity.Property(e => e.ModifiedOn).HasColumnType("datetime");
+            entity.Property(e => e.SettingKey).HasMaxLength(100);
+            entity.Property(e => e.SettingValue).HasMaxLength(1000);
+        });
+
         modelBuilder.Entity<ShipmentMode>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Shipment__3214EC076DEAB46A");
@@ -598,7 +646,19 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
+            entity.HasIndex(e => e.Email, "IX_User_Email");
+
+            entity.HasIndex(e => e.LoginType, "IX_User_LoginType");
+
+            entity.HasIndex(e => e.ReferenceId, "IX_User_ReferenceId");
+
+            entity.HasIndex(e => e.UserType, "IX_User_UserType");
+
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.AccountNo).HasMaxLength(50);
+            entity.Property(e => e.AccountTitle).HasMaxLength(200);
+            entity.Property(e => e.BankName).HasMaxLength(200);
+            entity.Property(e => e.Branch).HasMaxLength(200);
             entity.Property(e => e.City).HasMaxLength(100);
             entity.Property(e => e.CityAr).HasMaxLength(100);
             entity.Property(e => e.Cnic)
@@ -615,6 +675,7 @@ public partial class AppDbContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.EstablishmentName).HasMaxLength(250);
             entity.Property(e => e.EstablishmentNameAr).HasMaxLength(250);
+            entity.Property(e => e.Iban).HasMaxLength(50);
             entity.Property(e => e.LastLogin).HasColumnType("datetime");
             entity.Property(e => e.ModifiedOn).HasColumnType("datetime");
             entity.Property(e => e.Password)
@@ -626,6 +687,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Photo)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.SwiftCode).HasMaxLength(50);
+            entity.Property(e => e.TwoFactorRecoveryCodes).HasMaxLength(500);
+            entity.Property(e => e.TwoFactorSecretKey).HasMaxLength(100);
             entity.Property(e => e.UserId)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -642,6 +706,8 @@ public partial class AppDbContext : DbContext
             entity.HasIndex(e => e.CostCenterId, "IX_UserCostCenters_CostCenterId");
 
             entity.HasIndex(e => e.UserId, "IX_UserCostCenters_UserId");
+
+            entity.HasIndex(e => new { e.UserId, e.CostCenterId }, "IX_UserCostCenters_UserId_CostCenterId");
         });
 
         modelBuilder.Entity<UserType>(entity =>

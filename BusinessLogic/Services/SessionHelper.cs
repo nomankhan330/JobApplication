@@ -39,6 +39,17 @@ namespace BusinessLogic.Services
         // Added: photo key
         private const string PHOTO = "photo";
 
+        // Added: lock screen flag
+        private const string IS_LOCKED = "islocked";
+
+        // Added: company name
+        private const string COMPANY_NAME = "companyname";
+
+        // 2FA pending state
+        private const string PENDING_2FA_USERID = "pending2fauserid";
+        private const string PENDING_2FA_SECRET = "pending2fasecret";
+        private const string PENDING_2FA_DATA = "pending2fadata";
+
         public SessionHelper(IHttpContextAccessor context)
         {
             _session = context.HttpContext.Session;
@@ -367,6 +378,16 @@ namespace BusinessLogic.Services
             _session.Set(PHOTO, GetBytes(Photo ?? ""));
         }
 
+        public void Login(int AccountId, int LoginId, string UserName, int ReferenceId, string Photo, string CompanyName)
+        {
+            _session.Set(ACCOUNT_ID, GetBytes(AccountId.ToString()));
+            _session.Set(LOGIN_ID, GetBytes(LoginId.ToString()));
+            _session.Set(USER_NAME, GetBytes(UserName));
+            _session.Set(REFERENCE_ID, GetBytes(ReferenceId.ToString()));
+            _session.Set(PHOTO, GetBytes(Photo ?? ""));
+            _session.Set(COMPANY_NAME, GetBytes(CompanyName ?? ""));
+        }
+
         public void RemoveSession(string key)
         {
             _session.Remove(key);
@@ -380,9 +401,101 @@ namespace BusinessLogic.Services
             RemoveSession(LOGIN_TYPE);
             RemoveSession(USER_TYPE);
             RemoveSession(REGION_ID);
+            RemoveSession(IS_LOCKED);
 
             // Remove photo as part of logout
             RemoveSession(PHOTO);
+
+            // Remove pending 2FA state
+            RemoveSession(PENDING_2FA_USERID);
+            RemoveSession(PENDING_2FA_SECRET);
+            RemoveSession(PENDING_2FA_DATA);
+        }
+
+        public bool IsLocked
+        {
+            get
+            {
+                if (_session.TryGetValue(IS_LOCKED, out var value))
+                {
+                    return GetString(value) == "1";
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            set
+            {
+                _session.Set(IS_LOCKED, GetBytes(value ? "1" : "0"));
+            }
+        }
+
+        public string CompanyName
+        {
+            get
+            {
+                if (_session.TryGetValue(COMPANY_NAME, out var value))
+                {
+                    return GetString(value);
+                }
+                else
+                {
+                    return "";
+                }
+            }
+            set
+            {
+                _session.Set(COMPANY_NAME, GetBytes(value ?? ""));
+            }
+        }
+
+        public int Pending2FAUserId
+        {
+            get
+            {
+                if (_session.TryGetValue(PENDING_2FA_USERID, out var value))
+                {
+                    return DataHelper.intParse(GetString(value));
+                }
+                return 0;
+            }
+            set
+            {
+                _session.Set(PENDING_2FA_USERID, GetBytes(value.ToString()));
+            }
+        }
+
+        public string Pending2FASecret
+        {
+            get
+            {
+                if (_session.TryGetValue(PENDING_2FA_SECRET, out var value))
+                {
+                    return GetString(value);
+                }
+                return "";
+            }
+            set
+            {
+                _session.Set(PENDING_2FA_SECRET, GetBytes(value ?? ""));
+            }
+        }
+
+        public string Pending2FASessionData
+        {
+            get
+            {
+                if (_session.TryGetValue(PENDING_2FA_DATA, out var value))
+                {
+                    return GetString(value);
+                }
+                return "";
+            }
+            set
+            {
+                _session.Set(PENDING_2FA_DATA, GetBytes(value ?? ""));
+            }
         }
 
         public void Set(string key, string value)

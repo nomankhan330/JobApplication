@@ -1,15 +1,19 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using BusinessLogic.Models;
+using BusinessLogic.Interfaces;
 
 namespace JobApplication.Controllers
 {
     public class SettingController : Controller
     {
         private readonly AppDbContext _db;
+        private readonly ISessionHelper _session;
 
-        public SettingController(AppDbContext db)
+        public SettingController(AppDbContext db, ISessionHelper session)
         {
             _db = db;
+            _session = session;
         }
 
         // Generic settings index. ?type=jobtype|bltype|containertype|country
@@ -32,15 +36,10 @@ namespace JobApplication.Controllers
                 int draw = Convert.ToInt32(Request.Form["draw"].FirstOrDefault() ?? "0");
                 int start = Convert.ToInt32(Request.Form["start"].FirstOrDefault() ?? "0");
                 int length = Convert.ToInt32(Request.Form["length"].FirstOrDefault() ?? "10");
-                string search = (Request.Form["search[value]"] .FirstOrDefault() ?? "").Trim();
-
-                IQueryable<dynamic> query = type switch
-                {
-                    "bltype" => _db.Bltypes.AsQueryable(),
-                    "containertype" => _db.ContainerTypes.AsQueryable(),
-                    "country" => _db.Countries.AsQueryable(),
-                    _ => _db.JobTypes.AsQueryable(),
-                };
+                string search = (Request.Form["search[value]"].FirstOrDefault() ?? "").Trim();
+                int orderCol = Convert.ToInt32(Request.Form["order[0][column]"].FirstOrDefault() ?? "1");
+                bool desc = (Request.Form["order[0][dir]"].FirstOrDefault() ?? "asc")
+                    .Equals("desc", StringComparison.OrdinalIgnoreCase);
 
                 // handle each type explicitly to avoid dynamic expression trees
                 if (type == "bltype")
@@ -49,7 +48,11 @@ namespace JobApplication.Controllers
                     int recordsTotal = q.Count();
                     if (!string.IsNullOrEmpty(search)) q = q.Where(x => x.Name.Contains(search));
                     int recordsFiltered = q.Count();
-                    var data = q.OrderBy(x => x.Name).Skip(start).Take(length).Select(x => new { x.Id, x.Name, x.IsActive }).ToList();
+                    if (orderCol == 2)
+                        q = desc ? q.OrderByDescending(x => x.IsActive).ThenByDescending(x => x.Name) : q.OrderBy(x => x.IsActive).ThenBy(x => x.Name);
+                    else
+                        q = desc ? q.OrderByDescending(x => x.Name) : q.OrderBy(x => x.Name);
+                    var data = q.Skip(start).Take(length).Select(x => new { x.Id, x.Name, x.IsActive }).ToList();
                     return Json(new { draw = draw, recordsTotal = recordsTotal, recordsFiltered = recordsFiltered, data = data });
                 }
 
@@ -59,7 +62,11 @@ namespace JobApplication.Controllers
                     int recordsTotal = q.Count();
                     if (!string.IsNullOrEmpty(search)) q = q.Where(x => x.Name.Contains(search));
                     int recordsFiltered = q.Count();
-                    var data = q.OrderBy(x => x.Name).Skip(start).Take(length).Select(x => new { x.Id, x.Name, x.IsActive }).ToList();
+                    if (orderCol == 2)
+                        q = desc ? q.OrderByDescending(x => x.IsActive).ThenByDescending(x => x.Name) : q.OrderBy(x => x.IsActive).ThenBy(x => x.Name);
+                    else
+                        q = desc ? q.OrderByDescending(x => x.Name) : q.OrderBy(x => x.Name);
+                    var data = q.Skip(start).Take(length).Select(x => new { x.Id, x.Name, x.IsActive }).ToList();
                     return Json(new { draw = draw, recordsTotal = recordsTotal, recordsFiltered = recordsFiltered, data = data });
                 }
 
@@ -69,7 +76,11 @@ namespace JobApplication.Controllers
                     int recordsTotal = q.Count();
                     if (!string.IsNullOrEmpty(search)) q = q.Where(x => x.Name.Contains(search));
                     int recordsFiltered = q.Count();
-                    var data = q.OrderBy(x => x.Name).Skip(start).Take(length).Select(x => new { x.Id, x.Name, x.IsActive }).ToList();
+                    if (orderCol == 2)
+                        q = desc ? q.OrderByDescending(x => x.IsActive).ThenByDescending(x => x.Name) : q.OrderBy(x => x.IsActive).ThenBy(x => x.Name);
+                    else
+                        q = desc ? q.OrderByDescending(x => x.Name) : q.OrderBy(x => x.Name);
+                    var data = q.Skip(start).Take(length).Select(x => new { x.Id, x.Name, x.IsActive }).ToList();
                     return Json(new { draw = draw, recordsTotal = recordsTotal, recordsFiltered = recordsFiltered, data = data });
                 }
 
@@ -80,7 +91,15 @@ namespace JobApplication.Controllers
                     int recordsTotal = q.Count();
                     if (!string.IsNullOrEmpty(search)) q = q.Where(x => (x.Headers != null && x.Headers.Contains(search)) || (x.HeadersAr != null && x.HeadersAr.Contains(search)));
                     int recordsFiltered = q.Count();
-                    var data = q.OrderBy(x => x.Id).ThenBy(x => x.PaymentTypeId).Skip(start).Take(length).Select(x => new { x.Id, x.Headers, x.HeadersAr, x.PaymentTypeId, x.IsActive }).ToList();
+                    switch (orderCol)
+                    {
+                        case 0: q = desc ? q.OrderByDescending(x => x.Id) : q.OrderBy(x => x.Id); break;
+                        case 2: q = desc ? q.OrderByDescending(x => x.HeadersAr) : q.OrderBy(x => x.HeadersAr); break;
+                        case 3: q = desc ? q.OrderByDescending(x => x.PaymentTypeId) : q.OrderBy(x => x.PaymentTypeId); break;
+                        case 4: q = desc ? q.OrderByDescending(x => x.IsActive).ThenByDescending(x => x.Headers) : q.OrderBy(x => x.IsActive).ThenBy(x => x.Headers); break;
+                        default: q = desc ? q.OrderByDescending(x => x.Headers) : q.OrderBy(x => x.Headers); break;
+                    }
+                    var data = q.Skip(start).Take(length).Select(x => new { x.Id, x.Headers, x.HeadersAr, x.PaymentTypeId, x.IsActive }).ToList();
                     return Json(new { draw = draw, recordsTotal = recordsTotal, recordsFiltered = recordsFiltered, data = data });
                 }
 
@@ -90,7 +109,11 @@ namespace JobApplication.Controllers
                     int recordsTotal = q.Count();
                     if (!string.IsNullOrEmpty(search)) q = q.Where(x => x.Name.Contains(search));
                     int recordsFiltered = q.Count();
-                    var data = q.OrderBy(x => x.Name).Skip(start).Take(length).Select(x => new { x.Id, x.Name, x.IsActive }).ToList();
+                    if (orderCol == 2)
+                        q = desc ? q.OrderByDescending(x => x.IsActive).ThenByDescending(x => x.Name) : q.OrderBy(x => x.IsActive).ThenBy(x => x.Name);
+                    else
+                        q = desc ? q.OrderByDescending(x => x.Name) : q.OrderBy(x => x.Name);
+                    var data = q.Skip(start).Take(length).Select(x => new { x.Id, x.Name, x.IsActive }).ToList();
                     return Json(new { draw = draw, recordsTotal = recordsTotal, recordsFiltered = recordsFiltered, data = data });
                 }
             }
@@ -272,6 +295,119 @@ namespace JobApplication.Controllers
                     break;
             }
 
+            await _db.SaveChangesAsync();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GetVatSetting()
+        {
+            var ph = await _db.PaymentHeaders.FirstOrDefaultAsync(x => x.PaymentTypeId == 2);
+            return Json(new { success = true, vat = ph?.Vat });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateVatSetting(decimal? vat)
+        {
+            var list = await _db.PaymentHeaders.Where(x => x.PaymentTypeId == 2).ToListAsync();
+            if (list.Count == 0)
+            {
+                _db.PaymentHeaders.Add(new PaymentHeader
+                {
+                    PaymentTypeId = 2,
+                    Vat = vat,
+                    IsActive = true,
+                    CreatedOn = DateTime.Now,
+                    CreatedBy = _session.LoginId
+                });
+            }
+            else
+            {
+                foreach (var ph in list)
+                {
+                    ph.Vat = vat;
+                    ph.ModifiedBy = _session.LoginId;
+                    ph.ModifiedOn = DateTime.Now;
+                }
+            }
+            await _db.SaveChangesAsync();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GetQrCodeSetting()
+        {
+            var setting = await _db.Settings.FirstOrDefaultAsync(x => x.SettingKey == "EnableInvoiceQRCode");
+            bool enabled = setting?.IsActive ?? false;
+            return Json(new { success = true, enabled });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateQrCodeSetting(bool enabled)
+        {
+            if (_session.UserType != 1)
+            {
+                return Json(new { success = false, message = "Super Admin only." });
+            }
+
+            var setting = await _db.Settings.FirstOrDefaultAsync(x => x.SettingKey == "EnableInvoiceQRCode");
+            if (setting == null)
+            {
+                _db.Settings.Add(new Setting
+                {
+                    SettingKey = "EnableInvoiceQRCode",
+                    SettingValue = enabled.ToString(),
+                    IsActive = enabled,
+                    CreatedBy = _session.LoginId,
+                    CreatedOn = DateTime.Now
+                });
+            }
+            else
+            {
+                setting.SettingValue = enabled.ToString();
+                setting.IsActive = enabled;
+                setting.ModifiedBy = _session.LoginId;
+                setting.ModifiedOn = DateTime.Now;
+            }
+            await _db.SaveChangesAsync();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GetTwoFactorSetting()
+        {
+            var setting = await _db.Settings.FirstOrDefaultAsync(x => x.SettingKey == "EnableTwoFactorAuth");
+            bool enabled = setting?.IsActive ?? false;
+            return Json(new { success = true, enabled });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateTwoFactorSetting(bool enabled)
+        {
+            if (_session.UserType != 1)
+            {
+                return Json(new { success = false, message = "Super Admin only." });
+            }
+
+            var setting = await _db.Settings.FirstOrDefaultAsync(x => x.SettingKey == "EnableTwoFactorAuth");
+            if (setting == null)
+            {
+                _db.Settings.Add(new Setting
+                {
+                    SettingKey = "EnableTwoFactorAuth",
+                    SettingValue = enabled.ToString(),
+                    IsActive = enabled,
+                    CreatedBy = _session.LoginId,
+                    CreatedOn = DateTime.Now
+                });
+            }
+            else
+            {
+                setting.SettingValue = enabled.ToString();
+                setting.IsActive = enabled;
+                setting.ModifiedBy = _session.LoginId;
+                setting.ModifiedOn = DateTime.Now;
+            }
             await _db.SaveChangesAsync();
             return Json(new { success = true });
         }

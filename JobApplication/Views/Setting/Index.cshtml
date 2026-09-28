@@ -18,7 +18,7 @@
         <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                    <h4 class="mb-sm-0">Settings - @((t=="jobtype")?"Job Type":(t=="bltype")?"BL Type":(t=="containertype")?"Container Type":"Country")</h4>
+                    <h4 class="mb-sm-0">Settings - @((t=="jobtype")?"Job Type":(t=="bltype")?"BL Type":(t=="containertype")?"Container Type":(t=="paymentheader")?"Payment Header":(t=="vat")?"Vat %":(t=="general")?"General":"Country")</h4>
                 </div>
             </div>
         </div>
@@ -37,11 +37,13 @@
                                     <a class="btn @(t=="containertype"?"btn-primary":"btn-outline-secondary")" href="/Setting?type=containertype">Container Type</a>
                                     <a class="btn @(t=="country"?"btn-primary":"btn-outline-secondary")" href="/Setting?type=country">Country</a>
                                     <a class="btn @(t=="paymentheader"?"btn-primary":"btn-outline-secondary")" href="/Setting?type=paymentheader">Payment Header</a>
+                                    <a class="btn @(t=="vat"?"btn-primary":"btn-outline-secondary")" href="/Setting?type=vat">VAT %</a>
+                                    @* <a class="btn @(t=="general"?"btn-primary":"btn-outline-secondary")" href="/Setting?type=general">General</a> *@
                                 </div>
                             </div>
 
                             <div>
-                                <button id="btnAdd" class="btn btn-primary">Add New</button>
+                                <button id="btnAdd" class="btn btn-primary" style="display:@(t=="vat" || t=="general" ?"none":"inline-block")">Add New</button>
                             </div>
                         </div>
 
@@ -71,6 +73,57 @@
                                 </thead>
                                 <tbody></tbody>
                             </table>
+                        </div>
+
+                        <div id="vatSection" style="display:@(t=="vat"?"block":"none");">
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">VAT %</label>
+                                        <input id="vatValue" type="number" step="0.01" min="0" max="100" class="form-control" placeholder="Enter Vat %" />
+                                    </div>
+                                    <button id="btnSaveVat" class="btn btn-primary">Save</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="generalSection" style="display:@(t=="general"?"block":"none");">
+                            <div class="row justify-content-center mt-3">
+                                <div class="col-md-6">
+                                    <div class="card border shadow-none">
+                                        <div class="card-body py-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h5 class="mb-0">Invoice QR Code (ZATCA)</h5>
+                                                    <small class="text-muted">Enable to show ZATCA-compliant QR code on Sales &amp; Purchase invoices.</small>
+                                                </div>
+                                                <div class="form-check form-switch form-switch-lg" dir="ltr">
+                                                    <input type="checkbox" class="form-check-input" id="qrCodeEnabled">
+                                                    <label class="form-check-label" for="qrCodeEnabled">Enabled</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @if (SessionHelper.UserType == 1)
+                                    {
+                                    <div class="card border shadow-none mt-3">
+                                        <div class="card-body py-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h5 class="mb-0">Two-Factor Authentication</h5>
+                                                    <small class="text-muted">Require users to verify their identity with a TOTP authenticator app at login.</small>
+                                                </div>
+                                                <div class="form-check form-switch form-switch-lg" dir="ltr">
+                                                    <input type="checkbox" class="form-check-input" id="twoFactorEnabled">
+                                                    <label class="form-check-label" for="twoFactorEnabled">Enabled</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    }
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -130,6 +183,64 @@
         $(function(){
             var currentType = '@t';
 
+            // Vat tab: hide datatable, show vat section, load value
+            if(currentType === 'vat'){
+                $('.table-responsive').hide();
+                $('#vatSection').show();
+                $('#btnAdd').hide();
+                $.post('/Setting/GetVatSetting', function(res){
+                    if(res.success) $('#vatValue').val(res.vat !== null && res.vat !== undefined ? res.vat : '');
+                });
+            }
+
+            // General tab
+            if(currentType === 'general'){
+                $('.table-responsive').hide();
+                $('#generalSection').show();
+                $('#btnAdd').hide();
+                $.post('/Setting/GetQrCodeSetting', function(res){
+                    if(res.success) $('#qrCodeEnabled').prop('checked', res.enabled);
+                });
+                $('#qrCodeEnabled').on('change', function(){
+                    var enabled = $(this).is(':checked');
+                    $.post('/Setting/UpdateQrCodeSetting', { enabled: enabled }, function(res){
+                        if(res && res.success){
+                            Swal.fire("Success", enabled ? "QR Code enabled" : "QR Code disabled", "success");
+                        } else {
+                            Swal.fire("Error", (res && res.message) || "Something went wrong", "error");
+                        }
+                    });
+                });
+
+                $.post('/Setting/GetTwoFactorSetting', function(res){
+                    if(res.success) $('#twoFactorEnabled').prop('checked', res.enabled);
+                });
+                $('#twoFactorEnabled').on('change', function(){
+                    var enabled = $(this).is(':checked');
+                    Swal.fire({
+                        title: "Are you sure?",
+                        text: enabled ? "Enabling 2FA will require all users to complete authenticator setup at next login." : "Disabling 2FA will remove the verification step for all users.",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonText: "Yes, proceed"
+                    }).then(function(result){
+                        if (!result.isConfirmed) {
+                            $('#twoFactorEnabled').prop('checked', !enabled);
+                            return;
+                        }
+                        $.post('/Setting/UpdateTwoFactorSetting', { enabled: enabled }, function(res){
+                            if(res && res.success){
+                                Swal.fire("Success", enabled ? "Two-factor authentication enabled" : "Two-factor authentication disabled", "success");
+                            } else {
+                                $('#twoFactorEnabled').prop('checked', !enabled);
+                                Swal.fire("Error", (res && res.message) || "Something went wrong", "error");
+                            }
+                        });
+                    });
+                });
+            }
+
+            if(currentType !== 'vat' && currentType !== 'general'){
             var table = $('#tblSettings').DataTable({
                 processing: true,
                 serverSide: true,
@@ -148,8 +259,8 @@
                             { data: 'Id', orderable: true, searchable: false, className: 'text-center', render: function(data,type,row,meta){ return meta.row + meta.settings._iDisplayStart + 1; } },
                             { data: 'Headers' },
                             { data: 'HeadersAr' },
-                            { data: 'PaymentTypeId', className: 'text-center', orderable: false, render: function(d){ if(d==1) return 'Official'; if(d==2) return 'UnOfficial'; return ''; } },
-                            { data: 'IsActive', className: 'text-center', orderable: false, render: function(d){ return d? '<span class="badge bg-success">Active</span>':'<span class="badge bg-secondary">Inactive</span>'; } },
+                            { data: 'PaymentTypeId', className: 'text-center', orderable: true, render: function(d){ if(d==1) return 'Official'; if(d==2) return 'UnOfficial'; return ''; } },
+                            { data: 'IsActive', className: 'text-center', orderable: true, render: function(d){ return d? '<span class="badge bg-success">Active</span>':'<span class="badge bg-secondary">Inactive</span>'; } },
                             { data: null, className: 'text-center', orderable: false, searchable: false, render: function(data){ var id = data.Id || data.Id; return '<button class="btn btn-sm btn-info me-1 editBtn" data-id="'+id+'">Edit</button><button class="btn btn-sm btn-warning toggleBtn" data-id="'+id+'">Toggle</button>'; } }
                         ];
                     }
@@ -158,7 +269,7 @@
                     return [
                         { data: null, orderable: false, searchable: false, className: 'text-center', render: function(data,type,row,meta){ return meta.row + meta.settings._iDisplayStart + 1; } },
                         { data: 'Name' },
-                        { data: 'IsActive', className: 'text-center', orderable: false, render: function(d){ return d? '<span class="badge bg-success">Active</span>':'<span class="badge bg-secondary">Inactive</span>'; } },
+                        { data: 'IsActive', className: 'text-center', orderable: true, render: function(d){ return d? '<span class="badge bg-success">Active</span>':'<span class="badge bg-secondary">Inactive</span>'; } },
                         { data: null, className: 'text-center', orderable: false, searchable: false, render: function(data){ var id = data.Id || data.id; return '<button class="btn btn-sm btn-info me-1 editBtn" data-id="'+id+'">Edit</button><button class="btn btn-sm btn-warning toggleBtn" data-id="'+id+'">Toggle</button>'; } }
                     ];
                 })()
@@ -194,8 +305,23 @@
             // handle toggle
             $('#tblSettings tbody').on('click', '.toggleBtn', function(){
                 var id = $(this).data('id');
-                if(!confirm('Toggle status?')) return;
-                $.post('/Setting/ToggleStatus', { type: currentType, id: id }, function(){ table.ajax.reload(null,false); });
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You want to change the status of this item",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, toggle it!"
+                }).then(function(result){
+                    if (!result.isConfirmed) return;
+                    $.post('/Setting/ToggleStatus', { type: currentType, id: id }, function(res){
+                        if (res && res.success) {
+                            table.ajax.reload(null, false);
+                            Swal.fire("Success", "Status updated successfully", "success");
+                        } else {
+                            Swal.fire("Error", (res && res.message) || "Something went wrong", "error");
+                        }
+                    });
+                });
             });
 
             $('#btnAdd').on('click', function(){ $('#itemId').val(0); if(currentType === 'paymentheader'){ $('#groupName').hide(); $('#groupPaymentHeader').show(); $('#phHeaders').val(''); $('#phHeadersAr').val(''); $('#phVat').val(''); $('#phPaymentType').val(''); } else { $('#groupPaymentHeader').hide(); $('#groupName').show(); $('#itemName').val(''); } var m = new bootstrap.Modal(document.getElementById('editModal')); m.show(); });
@@ -208,16 +334,33 @@
                     var vat = $('#phVat').val() || '';
                     var paymentTypeId = $('#phPaymentType').val() || '';
                     $.post('/Setting/SaveItem', { type: currentType, id: id, headers: headers, headersAr: headersAr, vat: vat, paymentTypeId: paymentTypeId }, function(res){
-                        if(res.success){ bootstrap.Modal.getInstance(document.getElementById('editModal')).hide(); table.ajax.reload(); }
-                        else alert(res.message || 'Error');
+                        if(res.success){ bootstrap.Modal.getInstance(document.getElementById('editModal')).hide(); table.ajax.reload(); Swal.fire("Success", "Saved successfully", "success"); }
+                        else Swal.fire("Error", res.message || "Something went wrong", "error");
                     });
                 } else {
                     var name = $('#itemName').val() || '';
                     $.post('/Setting/SaveItem', { type: currentType, id: id, name: name }, function(res){
-                        if(res.success){ bootstrap.Modal.getInstance(document.getElementById('editModal')).hide(); table.ajax.reload(); }
-                        else alert(res.message || 'Error');
+                        if(res.success){ bootstrap.Modal.getInstance(document.getElementById('editModal')).hide(); table.ajax.reload(); Swal.fire("Success", "Saved successfully", "success"); }
+                        else Swal.fire("Error", res.message || "Something went wrong", "error");
                     });
                 }
+            });
+            } // end if(currentType !== 'vat' && currentType !== 'general')
+
+            // Vat save handler
+            $('#btnSaveVat').on('click', function(){
+                var val = $('#vatValue').val();
+                if(val === '' || isNaN(parseFloat(val))){
+                    Swal.fire("Error", "Please enter a valid Vat % value", "error");
+                    return;
+                }
+                $.post('/Setting/UpdateVatSetting', { vat: val }, function(res){
+                    if(res && res.success){
+                        Swal.fire("Success", "Vat % updated successfully", "success");
+                    } else {
+                        Swal.fire("Error", (res && res.message) || "Something went wrong", "error");
+                    }
+                });
             });
 
         });

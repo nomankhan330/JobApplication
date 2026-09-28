@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
 using BusinessLogic.Services;
+using JobApplication.Helpers;
 
 namespace JobApplication.Controllers
 {
@@ -25,9 +26,23 @@ namespace JobApplication.Controllers
                 return RedirectToAction("Login", "Home");
             }
 
+            if (model == null)
+            {
+                return Content(
+                    JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = "Invalid request. No data received." }),
+                    "application/json");
+            }
+
             // Handle Photo Upload
             if (PhotoFile != null && PhotoFile.Length > 0)
             {
+                if (!FileUploadHelper.IsAllowed(PhotoFile, out string uploadError))
+                {
+                    return Content(
+                        JsonConvert.SerializeObject(new { errorCode = 400, errorMessage = uploadError }),
+                        "application/json");
+                }
+
                 string folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/costcenters");
                 if (!Directory.Exists(folder))
                     Directory.CreateDirectory(folder);

@@ -207,7 +207,7 @@
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label" for="Photo">User Photo</label>
-                            <input type="file" class="form-control select-my" id="PhotoFile" name="PhotoFile" />
+                            <input type="file" class="form-control select-my" id="PhotoFile" name="PhotoFile" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" data-file-maxsize="5" />
                         </div>
 
                         <div class="col-md-6 mb-3">
@@ -310,9 +310,63 @@
                                            class="form-control"
                                            id="Vatnumber"
                                            name="Vatnumber"
-                                           placeholder="VAT Number">
+                                           placeholder="VAT Number"
+                                           maxlength="20">
                                 </div>
 
+                            </div>
+                        </fieldset>
+
+                        <!-- ==================== Bank Details Card ==================== -->
+                        <fieldset class="card mb-4" id="BankDetails">
+                            <legend class="card-header">Bank Details</legend>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">A/C No</label>
+                                        <input type="text" class="form-control"
+                                               id="AccountNo"
+                                               name="AccountNo"
+                                               placeholder="A/C No">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">A/C Title</label>
+                                        <input type="text" class="form-control"
+                                               id="AccountTitle"
+                                               name="AccountTitle"
+                                               placeholder="A/C Title">
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Bank</label>
+                                        <input type="text" class="form-control"
+                                               id="BankName"
+                                               name="BankName"
+                                               placeholder="Bank">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Branch</label>
+                                        <input type="text" class="form-control"
+                                               id="Branch"
+                                               name="Branch"
+                                               placeholder="Branch">
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">SWIFT Code</label>
+                                        <input type="text" class="form-control"
+                                               id="SwiftCode"
+                                               name="SwiftCode"
+                                               placeholder="SWIFT Code">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">IBAN Code</label>
+                                        <input type="text" class="form-control"
+                                               id="Iban"
+                                               name="Iban"
+                                               placeholder="IBAN Code">
+                                    </div>
+                                </div>
                             </div>
                         </fieldset>
 
@@ -408,6 +462,14 @@
         $('#btnSubmit').on('click', function () {
 
             if (!validateForm()) return;
+
+            const vatNumber = ($("#Vatnumber").val() || "").trim();
+
+            if (vatNumber && !/^\d{15,20}$/.test(vatNumber)) {
+                showMessage("VAT Number (TRN) must be 15 to 20 digits", "error");
+                $("#Vatnumber").focus();
+                return;
+            }
             
             $('#UserType').prop('disabled', false);
 
@@ -485,6 +547,14 @@
                     $("#City").val(data.City);
                     $("#CityAr").val(data.CityAr);
                     $("#Vatnumber").val(data.Vatnumber);
+
+                    // Bank fields
+                    $("#AccountNo").val(data.AccountNo || "");
+                    $("#AccountTitle").val(data.AccountTitle || "");
+                    $("#BankName").val(data.BankName || "");
+                    $("#Branch").val(data.Branch || "");
+                    $("#SwiftCode").val(data.SwiftCode || "");
+                    $("#Iban").val(data.Iban || "");
 
                     $("#Password").removeAttr("required");
                     $("#Password").val("");

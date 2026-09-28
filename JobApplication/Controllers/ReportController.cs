@@ -36,12 +36,22 @@ namespace JobApplication.Controllers
             return View();
         }
 
+        public IActionResult AgingReport()
+        {
+            return View();
+        }
+
         public IActionResult JobReport()
         {
             return View();
         }
 
         public IActionResult SalesReport()
+        {
+            return View();
+        }
+
+        public IActionResult PurchaseReport()
         {
             return View();
         }
@@ -96,6 +106,40 @@ namespace JobApplication.Controllers
                 }).ToList();
 
             var result = await _salesInvoice.GetSalesReport(filters);
+
+            return Json(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GetPurchaseReport()
+        {
+            var filters = Request.Form.Keys
+                .Select(k => new QueryFilters
+                {
+                    fieldName = k,
+                    filterValue = Request.Form[k]
+                }).ToList();
+
+            var result = await _purchaseInvoice.GetSalesReport(filters);
+
+            return Json(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GetAgingReport()
+        {
+            var filters = Request.Form.Keys
+                .Select(k => new QueryFilters
+                {
+                    fieldName = k,
+                    filterValue = Request.Form[k]
+                }).ToList();
+
+            string type = Request.Form["type"].ToString();
+
+            dynamic result = type == "purchase"
+                ? await _purchaseInvoice.GetAgingReport(filters)
+                : await _salesInvoice.GetAgingReport(filters);
 
             return Json(result);
         }

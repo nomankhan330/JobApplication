@@ -788,6 +788,51 @@ namespace BusinessLogic.Services
         {
             int pageSize = 10;
 
+            // AsNoTracking se EF Core ka tracking overhead khatam ho jata hai (read-only query ke liye)
+            var query = _context.JobImportMasters.AsNoTracking();
+
+            query = query.Where(x => x.ReferenceId == _session.ReferenceId);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                // Agar pehle lafz se match karna ho toh StartsWith istemal karain.
+                // Ye SQL mein 'search%' banayega aur Index Seek karega jo bohot fast hai.
+                query = query.Where(x => x.JobNumber != null && x.JobNumber.StartsWith(search));
+
+                // Agar darmayan se bhi search allow karni ho, toh Contains hi rehne dein:
+                // query = query.Where(x => x.JobNumber != null && x.JobNumber.Contains(search));
+            }
+
+            // Count Query khatam! Hum pageSize + 1 (11) records mangwa rahe hain
+            var rawData = await query
+                .OrderBy(x => x.JobNumber)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize + 1)
+                .Select(x => new
+                {
+                    id = x.Id,
+                    text = x.JobNumber
+                })
+                .ToListAsync();
+
+            // Agar 10 se zyada records mile hain, iska matlab hasMore = true hai
+            bool hasMore = rawData.Count > pageSize;
+
+            // Client ko sirf requested pageSize (10) records bhejain
+            var data = rawData.Take(pageSize);
+
+            return new
+            {
+                errorCode = 200,
+                data = data,
+                hasMore = hasMore
+            };
+        }
+
+        public async Task<dynamic> GetJobNos_Bk(string search = "", int page = 1)
+        {
+            int pageSize = 10;
+
             var query = _context.JobImportMasters.AsQueryable();
             query = query.Where(x => x.ReferenceId == _session.ReferenceId);
 

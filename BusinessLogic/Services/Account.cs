@@ -68,6 +68,7 @@ namespace BusinessLogic.Services
                                 u.UserType UserType,
                                 u.ReferenceId,
                                 u.Photo,
+                                u.CompanyName,
                                 STRING_AGG(cc.CostCenterName, ', ') AS CostCenters,
                                 STRING_AGG(CAST(cc.Id AS VARCHAR), ',') AS CostCenterIds
 
@@ -88,7 +89,8 @@ namespace BusinessLogic.Services
 	                            u.UserType,
 	                            u.LoginType,
                                 u.ReferenceId,
-                                u.Photo;";
+                                u.Photo,
+                                u.CompanyName;";
 
                 SqlParameter[] parameter =
                 {
@@ -105,39 +107,52 @@ namespace BusinessLogic.Services
                     {
                         DataRow row = result.table.Rows[0];
 
+                        int loginId = DataHelper.intParse(row["LoginId"]);
+                        int userType = DataHelper.intParse(row["UserType"]);
+
+                        bool globalTwoFactor = await IsTwoFactorGloballyEnabled();
+
+                        if (globalTwoFactor)
+                        {
+                            _session.Pending2FASessionData = JsonConvert.SerializeObject(new
+                            {
+                                LoginId = loginId,
+                                UserId = DataHelper.stringParse(row["UserId"]),
+                                UserName = DataHelper.stringParse(row["Username"]),
+                                LoginType = DataHelper.intParse(row["LoginType"]),
+                                UserType = userType,
+                                ReferenceId = DataHelper.intParse(row["ReferenceId"]),
+                                CostCenters = DataHelper.stringParse(row["CostCenters"]),
+                                CostCenterIds = DataHelper.stringParse(row["CostCenterIds"]),
+                                Photo = row["Photo"] == DBNull.Value ? "default.jpg" : DataHelper.stringParse(row["Photo"]),
+                                CompanyName = row["CompanyName"] == DBNull.Value ? "" : DataHelper.stringParse(row["CompanyName"])
+                            });
+
+                            _session.Pending2FAUserId = loginId;
+
+                            return new
+                            {
+                                errorCode = 200,
+                                data = userType,
+                                twoFactorRequired = true
+                            };
+                        }
 
                         SqlParameter[] updateParams =
                         {
-                            new SqlParameter("@Id", DataHelper.intParse(row["LoginId"])), // Logged-in user
+                            new SqlParameter("@Id", loginId), // Logged-in user
                             new SqlParameter("@LastLogin", DateTime.Now)
                         };
 
                         string updateQuery = @"UPDATE Users SET LastLogin = @LastLogin WHERE Id = @Id";
                         await _db.Execute(updateQuery, updateParams, CommandType.Text);
 
-                        _session.LoginId = DataHelper.intParse(row["LoginId"]);
-                        _session.LoginType = DataHelper.intParse(row["LoginType"]);
-                        _session.UserType = DataHelper.intParse(row["UserType"]);
-                        _session.Dbuserid = DataHelper.stringParse(row["UserId"]);
-                        _session.UserName = DataHelper.stringParse(row["Username"]);
-                        _session.CostCenters = DataHelper.stringParse(row["CostCenters"]);
-                        _session.CostCenterIds = DataHelper.stringParse(row["CostCenterIds"]);
-                        _session.ReferenceId = DataHelper.intParse(row["ReferenceId"]);
-                        //_session.Login(0, DataHelper.intParse(row["LoginId"]), row["Username"].ToString(), DataHelper.intParse(row["ReferenceId"]));
-                        //List<MenuItemViewModel> list = GetMenu();
-                        //_session.getmenus(list);
-
-                        // Set Photo into session (safe check for DBNull)
-                        var photoValue = row["Photo"] == DBNull.Value ? "default.jpg" : DataHelper.stringParse(row["Photo"]);
-                        _session.Photo = photoValue!;
-
-                        // Call Login including photo
-                        _session.Login(0, DataHelper.intParse(row["LoginId"]), DataHelper.stringParse(row["Username"]), DataHelper.intParse(row["ReferenceId"]), photoValue!);
+                        PopulateSession(row);
 
                         return new
                         {
                             errorCode = 200,
-                            data = DataHelper.intParse(row["UserType"])
+                            data = userType
                         };
                     }
                     else
@@ -169,9 +184,239 @@ namespace BusinessLogic.Services
             }
         }
 
+        public async Task<bool> VerifyPassword(string password)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(password))
+                {
+                    return false;
+                }
+
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Id == _session.LoginId && u.IsActive == true);
+
+                if (user == null)
+                {
+                    return false;
+                }
+
+                return user.Password == EncryptionHelper.Encrypt(password);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void PopulateSession(DataRow row)
+        {
+            _session.LoginId = DataHelper.intParse(row["LoginId"]);
+            _session.LoginType = DataHelper.intParse(row["LoginType"]);
+            _session.UserType = DataHelper.intParse(row["UserType"]);
+            _session.Dbuserid = DataHelper.stringParse(row["UserId"]);
+            _session.UserName = DataHelper.stringParse(row["Username"]);
+            _session.CostCenters = DataHelper.stringParse(row["CostCenters"]);
+            _session.CostCenterIds = DataHelper.stringParse(row["CostCenterIds"]);
+            _session.ReferenceId = DataHelper.intParse(row["ReferenceId"]);
+
+            // Set Photo into session (safe check for DBNull)
+            var photoValue = row["Photo"] == DBNull.Value ? "default.jpg" : DataHelper.stringParse(row["Photo"]);
+            _session.Photo = photoValue!;
+
+            _session.CompanyName = row["CompanyName"] == DBNull.Value ? "" : DataHelper.stringParse(row["CompanyName"]);
+
+            // Call Login including photo
+            _session.Login(0, DataHelper.intParse(row["LoginId"]), DataHelper.stringParse(row["Username"]), DataHelper.intParse(row["ReferenceId"]), photoValue!);
+        }
+
+        private async Task<bool> IsTwoFactorGloballyEnabled()
+        {
+            var setting = await _context.Settings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.SettingKey == "EnableTwoFactorAuth");
+
+            return setting?.IsActive == true;
+        }
+
+        public async Task<dynamic> CompleteTwoFactorLogin()
+        {
+            try
+            {
+                string pendingJson = _session.Pending2FASessionData;
+                if (string.IsNullOrEmpty(pendingJson) || _session.Pending2FAUserId == 0)
+                {
+                    return new { errorCode = 401, errorMessage = "Two-factor verification timed out. Please login again." };
+                }
+
+                var pending = JsonConvert.DeserializeObject<PendingLoginData>(pendingJson);
+                if (pending == null || pending.LoginId <= 0)
+                {
+                    return new { errorCode = 401, errorMessage = "Two-factor verification timed out. Please login again." };
+                }
+
+                _session.LoginId = pending.LoginId;
+                _session.LoginType = pending.LoginType;
+                _session.UserType = pending.UserType;
+                _session.Dbuserid = pending.UserId;
+                _session.UserName = pending.UserName;
+                _session.CostCenters = pending.CostCenters ?? "";
+                _session.CostCenterIds = pending.CostCenterIds ?? "";
+                _session.ReferenceId = pending.ReferenceId;
+                _session.Photo = string.IsNullOrEmpty(pending.Photo) ? "default.jpg" : pending.Photo;
+                _session.CompanyName = pending.CompanyName ?? "";
+
+                _session.Login(0, pending.LoginId, pending.UserName, pending.ReferenceId, _session.Photo);
+
+                // Clear the pending state
+                _session.Pending2FASessionData = "";
+                _session.Pending2FAUserId = 0;
+                _session.Pending2FASecret = "";
+
+                try
+                {
+                    SqlParameter[] updateParams =
+                    {
+                        new SqlParameter("@Id", pending.LoginId),
+                        new SqlParameter("@LastLogin", DateTime.Now)
+                    };
+                    await _db.Execute(@"UPDATE Users SET LastLogin = @LastLogin WHERE Id = @Id", updateParams, CommandType.Text);
+                }
+                catch
+                {
+                    // LastLogin update failure should not block login
+                }
+
+                return new
+                {
+                    errorCode = 200,
+                    data = pending.UserType
+                };
+            }
+            catch (Exception ae)
+            {
+                return new
+                {
+                    errorCode = 999,
+                    errorMessage = ae.Message
+                };
+            }
+        }
+
+        private class PendingLoginData
+        {
+            public int LoginId { get; set; }
+            public string UserId { get; set; } = "";
+            public string UserName { get; set; } = "";
+            public int LoginType { get; set; }
+            public int UserType { get; set; }
+            public int ReferenceId { get; set; }
+            public string CostCenters { get; set; } = "";
+            public string CostCenterIds { get; set; } = "";
+            public string Photo { get; set; } = "default.jpg";
+            public string CompanyName { get; set; } = "";
+        }
+
+        public async Task<dynamic> VerifySecurityAnswer(string userId, string answer)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(answer))
+                {
+                    return new { errorCode = 400, errorMessage = "User ID and security answer are required." };
+                }
+
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.UserId == userId.Trim() && u.IsActive == true);
+
+                if (user == null)
+                {
+                    return new { errorCode = 404, errorMessage = "User not found." };
+                }
+
+                string userPhone = (user.PhoneNo ?? "").Trim();
+                string userCnic = (user.Cnic ?? "").Trim();
+                string trimmedAnswer = answer.Trim();
+
+                bool hasSecurityDetails = !string.IsNullOrEmpty(userPhone) || !string.IsNullOrEmpty(userCnic);
+
+                if (!hasSecurityDetails)
+                {
+                    return new { errorCode = 403, errorMessage = "No security details (phone / CNIC) are set for this user. Please contact your administrator to reset the password." };
+                }
+
+                bool phoneMatch = !string.IsNullOrEmpty(userPhone) && string.Equals(userPhone, trimmedAnswer, StringComparison.OrdinalIgnoreCase);
+                bool cnicMatch = !string.IsNullOrEmpty(userCnic) && string.Equals(userCnic.Replace("-", ""), trimmedAnswer.Replace("-", ""), StringComparison.OrdinalIgnoreCase);
+
+                if (!phoneMatch && !cnicMatch)
+                {
+                    return new { errorCode = 401, errorMessage = "Security answer is incorrect." };
+                }
+
+                return new
+                {
+                    errorCode = 200,
+                    userId = user.UserId,
+                    userName = user.UserName,
+                    securityField = phoneMatch ? "Phone" : "CNIC"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logs.Write("Account", "ForgotPassword", ex.Message);
+                return new { errorCode = 999, errorMessage = ex.Message };
+            }
+        }
+
+        public async Task<dynamic> ResetPassword(string userId, string newPassword)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return new { errorCode = 400, errorMessage = "User ID is required." };
+                }
+
+                if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
+                {
+                    return new { errorCode = 400, errorMessage = "Password must be at least 6 characters long." };
+                }
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId.Trim());
+
+                if (user == null)
+                {
+                    return new { errorCode = 404, errorMessage = "User not found." };
+                }
+
+                user.Password = EncryptionHelper.Encrypt(newPassword);
+                user.ModifiedBy = user.Id;
+                user.ModifiedOn = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return new { errorCode = 200, errorMessage = "Password has been reset successfully." };
+            }
+            catch (Exception ex)
+            {
+                _logs.Write("Account", "ResetPassword", ex.Message);
+                return new { errorCode = 999, errorMessage = ex.Message };
+            }
+        }
+
         #region User
         public async Task<dynamic> SaveUser(User model)
         {
+            if (model == null)
+            {
+                return new { errorCode = 400, errorMessage = "Invalid request. No user data received." };
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Vatnumber) && !ZatcaQrHelper.IsValidTrn(model.Vatnumber))
+            {
+                return new { errorCode = 400, errorMessage = "VAT Number (TRN) must be 15 to 20 digits" };
+            }
+
             using (var transaction = _context.Database.BeginTransaction())
             {
                 try
@@ -218,6 +463,14 @@ namespace BusinessLogic.Services
                             City = model.City,
                             CityAr = model.CityAr,
                             Vatnumber = model.Vatnumber,
+
+                            // Bank Details
+                            AccountNo = model.AccountNo,
+                            AccountTitle = model.AccountTitle,
+                            BankName = model.BankName,
+                            Branch = model.Branch,
+                            SwiftCode = model.SwiftCode,
+                            Iban = model.Iban,
                         };
 
                         _context.Users.Add(user);
@@ -257,6 +510,14 @@ namespace BusinessLogic.Services
                         user.City = model.City;
                         user.CityAr = model.CityAr;
                         user.Vatnumber = model.Vatnumber;
+
+                        // Bank Details
+                        user.AccountNo = model.AccountNo;
+                        user.AccountTitle = model.AccountTitle;
+                        user.BankName = model.BankName;
+                        user.Branch = model.Branch;
+                        user.SwiftCode = model.SwiftCode;
+                        user.Iban = model.Iban;
 
                         //if (!string.IsNullOrEmpty(model.Password))
                         //    user.Password = Enc.getMD5Password(model.UserId, model.Password);
@@ -670,6 +931,12 @@ namespace BusinessLogic.Services
                             user.City,
                             user.CityAr,
                             user.Vatnumber,
+                            user.AccountNo,
+                            user.AccountTitle,
+                            user.BankName,
+                            user.Branch,
+                            user.SwiftCode,
+                            user.Iban,
                             CostCenterIds = costCenterIds
                         },
                     };
@@ -865,7 +1132,15 @@ namespace BusinessLogic.Services
                         user.CountryAr,
                         user.City,
                         user.CityAr,
-                        user.Vatnumber
+                        user.Vatnumber,
+
+                        // Bank Details
+                        user.AccountNo,
+                        user.AccountTitle,
+                        user.BankName,
+                        user.Branch,
+                        user.SwiftCode,
+                        user.Iban
                     }
                 };
             }
@@ -883,10 +1158,24 @@ namespace BusinessLogic.Services
 
         public async Task<dynamic> UpdateProfile(User model)
         {
+            if (model == null)
+            {
+                return new { errorCode = 400, errorMessage = "Invalid request. No user data received." };
+            }
+
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
+                if (!string.IsNullOrWhiteSpace(model.Vatnumber) && !ZatcaQrHelper.IsValidTrn(model.Vatnumber))
+                {
+                    return new
+                    {
+                        errorCode = 400,
+                        errorMessage = "VAT Number (TRN) must be 15 to 20 digits"
+                    };
+                }
+
                 if (_session.LoginId == 0)
                 {
                     return new
@@ -927,6 +1216,14 @@ namespace BusinessLogic.Services
                 user.City = model.City;
                 user.CityAr = model.CityAr;
                 user.Vatnumber = model.Vatnumber;
+
+                //Bank Details
+                user.AccountNo = model.AccountNo;
+                user.AccountTitle = model.AccountTitle;
+                user.BankName = model.BankName;
+                user.Branch = model.Branch;
+                user.SwiftCode = model.SwiftCode;
+                user.Iban = model.Iban;
 
                 // Password is optional during a profile update.
                 if (!string.IsNullOrWhiteSpace(model.Password))

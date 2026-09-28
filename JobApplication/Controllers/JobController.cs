@@ -24,8 +24,19 @@ namespace JobApplication.Controllers
             _session = session;
         }
 
+        public IActionResult Unauthorized()
+        {
+            return View();
+        }
+
         public IActionResult Import()
         {
+            // SuperAdmin cannot access Import page
+            if (_session.UserType == 1)
+            {
+                return RedirectToAction("Unauthorized", "Job");
+            }
+
             ViewBag.LoginType = _session.LoginType;
             return View();
         }
@@ -34,6 +45,12 @@ namespace JobApplication.Controllers
         {
             ViewBag.EditId = id;
             ViewBag.UserType = _session.UserType;
+
+            // SuperAdmin cannot access Add Import page
+            if (_session.UserType == 1)
+            {
+                return RedirectToAction("Unauthorized", "Job");
+            }
 
             int userId = _session.LoginId;
 
@@ -92,6 +109,12 @@ namespace JobApplication.Controllers
 
         public IActionResult Export()
         {
+            // SuperAdmin cannot access Export page
+            if (_session.UserType == 1)
+            {
+                return RedirectToAction("Unauthorized", "Job");
+            }
+
             ViewBag.LoginType = _session.LoginType;
             return View();
         }
@@ -100,6 +123,12 @@ namespace JobApplication.Controllers
         {
             ViewBag.EditId = id;
             ViewBag.UserType = _session.UserType;
+
+            // SuperAdmin cannot access Add Export page
+            if (_session.UserType == 1)
+            {
+                return RedirectToAction("Unauthorized", "Job");
+            }
 
             int userId = _session.LoginId;
 

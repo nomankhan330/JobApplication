@@ -39,26 +39,8 @@
         <header id="page-topbar">
             <div class="navbar-header">
                 <div class="d-flex">
-                    <!-- LOGO -->
-                    <div class="navbar-brand-box">
-                        <a href="#" class="logo logo-dark">
-                           @*  <span class="logo-sm">
-                                <img src="~/assets/images/logo-sm.png" alt="logo-sm" height="22">
-                            </span> *@
-                            <span class="logo-lg">
-                                <img src="~/assets/images/logo-dark.png" alt="logo-dark" height="20">
-                            </span>
-                        </a>
-
-                        <a href="#" class="logo logo-light" style="display: none; width: 100%; padding: 0; margin: 0;">
-                            <span class="logo-sm">
-                                <img src="~/assets/images/logo-sm.png" alt="logo-sm-light" height="22">
-                            </span>
-                            <span class="logo-lg" style="display: none; width: 100%; padding: 0;">
-                                <img src="~/assets/images/logo-white.png" alt="logo-light" style="width: 100%; height: auto; display: block; object-fit: cover;">
-                            </span>
-                        </a>
-                    </div>
+                    <!-- LOGO (removed from top) -->
+                    <div class="navbar-brand-box"></div>
 
                     <button type="button" class="btn btn-sm px-3 font-size-24 header-item waves-effect" id="vertical-menu-btn">
                         <i class="ri-menu-2-line align-middle"></i>
@@ -109,7 +91,7 @@
                                 <i class="ri-user-line align-middle me-1"></i> Profile
                             </a>
                             <a class="dropdown-item d-block" href="#"><i class="ri-settings-2-line align-middle me-1"></i> Settings</a>
-                            <a class="dropdown-item" href="#"><i class="ri-lock-unlock-line align-middle me-1"></i> Lock screen</a>
+                            <a class="dropdown-item" href="/Account/Lock"><i class="ri-lock-unlock-line align-middle me-1"></i> Lock screen</a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item text-danger" id="Logout" href="javascript:;"><i class="ri-shut-down-line align-middle me-1 text-danger"></i> Logout</a>
                         </div>
@@ -129,7 +111,7 @@
         <!-- Left Sidebar Start -->
         <div class="vertical-menu">
 
-            <div data-simplebar class="h-100">
+<div data-simplebar class="h-100" style="padding-bottom: 90px;">
 
                 <!-- User details -->
                 <div class="user-profile text-center mt-3">
@@ -138,6 +120,10 @@
                     </div>
                     <div class="mt-3">
                         <h4 class="font-size-16 mb-1">@SessionHelper.UserName</h4>
+                        @if (!string.IsNullOrEmpty(SessionHelper.CompanyName))
+                        {
+                            <h5 class="font-size-13 mb-1 text-primary">@SessionHelper.CompanyName</h5>
+                        }
                         <span class="text-muted"><i class="ri-record-circle-line align-middle font-size-14 text-success"></i> Online</span>
                     </div>
                 </div>
@@ -149,7 +135,7 @@
                         <li class="menu-title">Menu</li>
 
                         <li>
-                            <a href="/Dashboard/Index" class="waves-effect">
+                            <a href="@(SessionHelper.UserType == 1 ? "/Dashboard/SuperAdmin" : "/Dashboard/Index")" class="waves-effect">
                                 <i class="ri-dashboard-line"></i>
                                 <span>Dashboard</span>
                             </a>
@@ -165,6 +151,13 @@
                             </li>
 
                             <li>
+                                <a href="/Invoice/RegenerateInvoices" class=" waves-effect">
+                                    <i class="ri-refresh-line"></i>
+                                    <span>Regenerate Invoices</span>
+                                </a>
+                            </li>
+
+                            <li>
                                 <a href="javascript: void(0);" class="has-arrow waves-effect">
                                     <i class="ri-settings-4-line"></i>
                                     <span>Settings</span>
@@ -175,7 +168,17 @@
                                     <li><a href="/Setting?type=containertype">Container Type</a></li>
                                     <li><a href="/Setting?type=country">Country</a></li>
                                     <li><a href="/Setting?type=paymentheader">Payment Headers</a></li>
+                                    <li><a href="/Setting?type=vat">VAT %</a></li>
                                 </ul>
+
+                               @*  <ul class="sub-menu" aria-expanded="false">
+                                    <li><a href="#">Job Type</a></li>
+                                    <li><a href="#">BL Type</a></li>
+                                    <li><a href="#">Container Type</a></li>
+                                    <li><a href="#">Country</a></li>
+                                    <li><a href="#">Payment Headers</a></li>
+                                    <li><a href="#">VAT %</a></li>
+                                </ul> *@
                             </li>
                         }
                         else if (SessionHelper.UserType == 3) //Authorize User
@@ -293,6 +296,8 @@
                                     <li><a href="/Report/CostCenter">Cost Center</a></li>
                                     <li><a href="/Report/JobReport">Job Report</a></li>
                                     <li><a href="/Report/SalesReport">Sales Report</a></li>
+                                    @* <li><a href="/Report/PurchaseReport">Purchase Report</a></li>
+                                    <li><a href="/Report/AgingReport">Aging Report</a></li> *@
                                 </ul>
                             </li>
 
@@ -315,8 +320,13 @@
 
                     </ul>
                 </div>
-                <!-- Sidebar -->
             </div>
+
+            <!-- Sidebar Bottom Logo (pinned, out of scroll area) -->
+            <div style="position: absolute; bottom: 15px; left: 0; right: 0; text-align: center; padding: 0 15px;">
+                <img src="~/assets/images/logo-name.png" alt="logo-name" style="width: 100%; max-height: 60px; object-fit: contain; display: block;">
+            </div>
+            <!-- Sidebar -->
         </div>
         <!-- Left Sidebar End -->
 
@@ -328,12 +338,13 @@
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-sm-6">
-                            <script>document.write(new Date().getFullYear())</script> © C & F Management System.
+                            <img src="~/assets/images/mz-logo.png" alt="MZ Solutions" height="22" class="me-2">
+                            <span>&copy; 2026 MZ Solutions Pvt. Ltd. All rights reserved.</span>
                         </div>
                         <div class="col-sm-6">
-                            @* <div class="text-sm-end d-none d-sm-block">
-                                Crafted with <i class="mdi mdi-heart text-danger"></i> by Themesdesign
-                            </div> *@
+                            <div class="text-end">
+                                <span>Designed and developed by MZ Solutions.</span>
+                            </div>
                         </div>
                     </div>
                 </div>

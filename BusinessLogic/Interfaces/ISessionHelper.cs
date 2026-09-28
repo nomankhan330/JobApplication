@@ -25,6 +25,12 @@ namespace BusinessLogic.Interfaces
         string Dbuserid { get; set; }
         int ReferenceId { get; set; }
         string Photo { get; set; }
+        string CompanyName { get; set; }
+        bool IsLocked { get; set; }
+
+        int Pending2FAUserId { get; set; }
+        string Pending2FASecret { get; set; }
+        string Pending2FASessionData { get; set; }
 
         void Set(string key, string value);
 
