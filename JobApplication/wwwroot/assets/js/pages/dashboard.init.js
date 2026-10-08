@@ -33,8 +33,13 @@
         return 'Rs. ' + Number(amount || 0).toLocaleString('en-PK', { minimumFractionDigits: 0 });
     }
 
-    function fetchTrend(period, from, to) {
-        var data = { period: period || 'ThisYear' };
+    function fetchTrend(period, from, to, month) {
+        var data = {};
+        if (month) {
+            data.month = month;
+        } else {
+            data.period = period || 'ThisYear';
+        }
         if (from) data.from = from;
         if (to) data.to = to;
 
@@ -92,8 +97,13 @@
         chartEl._apexChart = chart;
     }
 
-    function fetchRevenue(period, from, to) {
-        var data = { period: period || 'ThisYear' };
+    function fetchRevenue(period, from, to, month) {
+        var data = {};
+        if (month) {
+            data.month = month;
+        } else {
+            data.period = period || 'ThisYear';
+        }
         if (from) data.from = from;
         if (to) data.to = to;
 
@@ -120,9 +130,17 @@
             });
     }
 
-    // initial load
-    fetchTrend('ThisYear');
-    fetchRevenue('ThisYear');
+    // initial load (Admin dashboard month dropdown takes precedence when present)
+    (function () {
+        var month = $('#dashboardMonth').length ? $('#dashboardMonth').val() : null;
+        if (month) {
+            fetchTrend(null, null, null, month);
+            fetchRevenue(null, null, null, month);
+        } else {
+            fetchTrend('ThisYear');
+            fetchRevenue('ThisYear');
+        }
+    })();
 
     // Apply / Clear date range handlers
     $(document).on('click', '#applyDateRange', function (e) {

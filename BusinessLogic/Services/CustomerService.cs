@@ -28,31 +28,40 @@ namespace BusinessLogic.Services
         private readonly ISessionHelper _session;
         private readonly ILogs _logs;
         private readonly IDatabaseObject _db;
+        private readonly IAuditService _audit;
 
         public void Dispose()
         {
             //throw new NotImplementedException();
         }
 
-        public CustomerService(AppDbContext context, ISessionHelper session, ILogs logs, IDatabaseObject db)
+        public CustomerService(AppDbContext context, ISessionHelper session, ILogs logs, IDatabaseObject db, IAuditService audit)
         {
             _context = context;
             _session = session;
             _logs = logs;
             _db = db;
+            _audit = audit;
         }
 
         public async Task<dynamic> Save(Customer model)
         {
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                try
+            try
+            {
+                // ========== AUDIT: snapshot the row before we touch it ==========
+                // Snapshot() copies the values out, so the mutations below cannot leak
+                // into the "before" side of the diff.
+                var auditBefore = model.Id == 0
+                    ? null
+                    : _audit.Snapshot(await _context.Customers.FindAsync(model.Id));
+
+                if (model.Id == 0)
                 {
-                    if (model.Id == 0)
-                    {
-                        // 🔹 Duplicate check (CustomerName)
-                        var exists = await _context.Customers
-                            .AnyAsync(c => c.CustomerName.ToLower() == model.CustomerName.ToLower() && c.ReferenceId == _session.ReferenceId);
+                    // 🔹 Duplicate check (CustomerName)
+                    var exists = await _context.Customers
+                        .AnyAsync(c => c.CustomerName.ToLower() == model.CustomerName.ToLower() && c.ReferenceId == _session.ReferenceId);
 
                         if (exists)
                         {
@@ -163,6 +172,9 @@ namespace BusinessLogic.Services
 
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
+
+                    // ========== AUDIT: record customer / service-provider save ==========
+                    await RecordCustomerAuditAsync(model, auditBefore);
 
                     return new
                     {
@@ -691,8 +703,24 @@ namespace BusinessLogic.Services
                     };
                 }
 
+                // ========== AUDIT: keep the row that is about to disappear ==========
+                var auditBefore = _audit.Snapshot(existingRecord);
+
                 _context.Customers.Remove(existingRecord);
                 await _context.SaveChangesAsync();
+
+                // ========== AUDIT: record delete ==========
+                await _audit.RecordAsync(new AuditEntryRequest
+                {
+                    Module = "Customer",
+                    Action = "Delete",
+                    EntityName = "Customer",
+                    EntityId = existingRecord.CustomerCode ?? $"Customer#{id}",
+                    Description = $"{CustomerKind(existingRecord.TypeId)} '{existingRecord.CustomerName}' deleted.",
+                    OldValues = auditBefore,
+                    NewValues = null,
+                    PageName = "/Customer"
+                });
 
                 return new
                 {
@@ -725,11 +753,17 @@ namespace BusinessLogic.Services
                 return new { errorCode = 404, errorMessage = "Customer not found" };
             }
 
+            // ========== AUDIT: snapshot before flipping the flag ==========
+            var auditBefore = _audit.Snapshot(customer);
+
             customer.IsActive = isActive;
             customer.ModifiedBy = _session.LoginId;
             customer.ModifiedOn = DateTime.Now;
 
             await _context.SaveChangesAsync();
+
+            // ========== AUDIT: record status change ==========
+            await RecordStatusAuditAsync(customer, isActive, auditBefore);
 
             return new
             {
@@ -763,6 +797,9 @@ namespace BusinessLogic.Services
                     };
                 }
 
+                // ========== AUDIT: snapshot before flipping the flag ==========
+                var auditBefore = _audit.Snapshot(customer);
+
                 // 🔄 Toggle status
                 customer.IsActive = !(customer.IsActive ?? false);
 
@@ -770,6 +807,9 @@ namespace BusinessLogic.Services
                 customer.ModifiedOn = DateTime.Now;
 
                 await _context.SaveChangesAsync();
+
+                // ========== AUDIT: record status change ==========
+                await RecordStatusAuditAsync(customer, customer.IsActive ?? false, auditBefore);
 
                 return new
                 {
@@ -794,6 +834,56 @@ namespace BusinessLogic.Services
                     errorMessage = ex.Message
                 };
             }
+        }
+
+        // =============================================================
+        // AUDIT HELPERS
+        // =============================================================
+
+        /// <summary>TypeId 2 is a service provider; everything else is a customer.</summary>
+        private static string CustomerKind(int? typeId)
+        {
+            return typeId == 2 ? "Service provider" : "Customer";
+        }
+
+        private async Task RecordCustomerAuditAsync(Customer model, IDictionary<string, object?>? before)
+        {
+            // Re-read so the generated code and identity are in the "after" snapshot.
+            var saved = await _context.Customers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.CustomerName == model.CustomerName && c.ReferenceId == _session.ReferenceId);
+
+            var after = _audit.Snapshot(saved);
+
+            await _audit.RecordAsync(new AuditEntryRequest
+            {
+                Module = "Customer",
+                Action = model.Id == 0 ? "Create" : "Update",
+                EntityName = "Customer",
+                EntityId = saved?.CustomerCode ?? model.CustomerCode ?? $"Customer#{model.Id}",
+                Description = model.Id == 0
+                    ? $"{CustomerKind(model.TypeId)} '{model.CustomerName}' created with code {saved?.CustomerCode}."
+                    : $"{CustomerKind(model.TypeId)} '{model.CustomerName}' updated.",
+                OldValues = before,
+                NewValues = after,
+                PageName = "/Customer"
+            });
+        }
+
+        private Task RecordStatusAuditAsync(Customer customer, bool isActive, IDictionary<string, object?> before)
+        {
+            return _audit.RecordAsync(new AuditEntryRequest
+            {
+                Module = "Customer",
+                Action = "Toggle Status",
+                EntityName = "Customer",
+                EntityId = customer.CustomerCode ?? $"Customer#{customer.Id}",
+                Description = $"{CustomerKind(customer.TypeId)} '{customer.CustomerName}' " +
+                              $"{(isActive ? "activated" : "deactivated")}.",
+                OldValues = before,
+                NewValues = _audit.Snapshot(customer),
+                PageName = "/Customer"
+            });
         }
     }
 }

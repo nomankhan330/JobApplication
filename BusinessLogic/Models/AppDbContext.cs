@@ -11,6 +11,8 @@ public partial class AppDbContext : DbContext
     {
     }
 
+    public virtual DbSet<AuditLog> AuditLogs { get; set; }
+
     public virtual DbSet<Blstatus> Blstatuses { get; set; }
 
     public virtual DbSet<Bltype> Bltypes { get; set; }
@@ -79,6 +81,28 @@ public partial class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasIndex(e => e.AuditDate, "IX_AuditLogs_AuditDate").IsDescending();
+
+            entity.HasIndex(e => new { e.Module, e.Action }, "IX_AuditLogs_Module_Action");
+
+            entity.HasIndex(e => e.UserId, "IX_AuditLogs_UserId");
+
+            entity.Property(e => e.Action).HasMaxLength(50);
+            entity.Property(e => e.AuditDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.EntityId).HasMaxLength(200);
+            entity.Property(e => e.EntityName).HasMaxLength(100);
+            entity.Property(e => e.IpAddress).HasMaxLength(100);
+            entity.Property(e => e.Module).HasMaxLength(100);
+            entity.Property(e => e.PageName).HasMaxLength(200);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+            entity.Property(e => e.UserName).HasMaxLength(200);
+        });
+
         modelBuilder.Entity<Blstatus>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__BLStatus__3214EC07C40B5212");

@@ -10,6 +10,17 @@
     <None Remove="Views\Invoice\CreateSalesInvoice.cshtml~RF29cd62a0.TMP" />
   </ItemGroup>
 
+  <!-- DinkToPdf P/Invokes "libwkhtmltox". The runtime resolves native libraries from the
+       app base directory only, so it must be copied next to the executable. Without this the
+       PDF export throws DllNotFoundException and downloads as a blank/HTML file. -->
+  <ItemGroup>
+    <None Include="libwkhtmltox.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
   <ItemGroup>
     <Content Include="wwwroot\assets\libs\datatables.net-autofill-bs4\node_modules\jquery\AUTHORS.txt" />
     <Content Include="wwwroot\assets\libs\datatables.net-autofill-bs4\node_modules\jquery\external\sizzle\LICENSE.txt" />

@@ -36,19 +36,21 @@ namespace BusinessLogic.Services
         private readonly ILogs _logs;
         private readonly IDatabaseObject _db;
         private readonly IConverter _converter;
+        private readonly IAuditService _audit;
 
         public void Dispose()
         {
             //throw new NotImplementedException();
         }
 
-        public SalesInvoiceService(AppDbContext context, ISessionHelper session, ILogs logs, IDatabaseObject db, IConverter converter)
+        public SalesInvoiceService(AppDbContext context, ISessionHelper session, ILogs logs, IDatabaseObject db, IConverter converter, IAuditService audit)
         {
             _context = context;
             _session = session;
             _logs = logs;
             _db = db;
             _converter = converter;
+            _audit = audit;
         }
 
         private async Task<string> GetQrCodeHtml(User user, dynamic inv)
@@ -85,6 +87,8 @@ namespace BusinessLogic.Services
         {
             bool isEdit = model.InvoiceId > 0;
             SalesInvoice invoice = null!;
+            IDictionary<string, object?>? auditBefore = null;
+            int auditLineCountBefore = 0;
 
             // Regex pattern validation for custom creation
             var invoiceNoRegex = new Regex(@"^INV-\d{4}-\d{4}$", RegexOptions.IgnoreCase);
@@ -127,6 +131,11 @@ namespace BusinessLogic.Services
                         await transaction.RollbackAsync();
                         return new { errorCode = 404, errorMessage = "Invoice not found for update." };
                     }
+
+                    // ========== AUDIT: capture state BEFORE any change ==========
+                    auditBefore = _audit.Snapshot(invoice);
+                    auditLineCountBefore = await _context.SalesInvoiceDetails
+                        .CountAsync(x => x.InvoiceId == model.InvoiceId);
 
                     // UPDATE ONLY HEADER DATA (InvoiceNo strictly retain hoga)
                     invoice.CustomerId = model.CustomerId;
@@ -246,6 +255,29 @@ namespace BusinessLogic.Services
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                // ========== AUDIT: record create / update ==========
+                var names = await _audit.ResolveNamesAsync(model.CustomerId, model.JobId);
+                string customerLabel = names.Lookup.TryGetValue($"CustomerId:{model.CustomerId}", out var cName)
+                    ? cName
+                    : $"#{model.CustomerId}";
+                string jobLabel = names.Lookup.TryGetValue($"JobId:{model.JobId}", out var jNum)
+                    ? jNum
+                    : $"#{model.JobId}";
+
+                await _audit.RecordAsync(new AuditEntryRequest
+                {
+                    Module = "Sales Invoice",
+                    Action = isEdit ? "Update" : "Create",
+                    EntityName = "SalesInvoice",
+                    EntityId = invoice.InvoiceNo,
+                    Description = isEdit
+                        ? $"Sales invoice {invoice.InvoiceNo} updated for customer {customerLabel}, job {jobLabel}. Line items: {auditLineCountBefore} -> {model.Items?.Count ?? 0}."
+                        : $"Sales invoice {invoice.InvoiceNo} created for customer {customerLabel}, job {jobLabel}, total {model.GrandTotal:N2}.",
+                    OldValues = auditBefore,
+                    NewValues = _audit.Snapshot(invoice),
+                    PageName = isEdit ? "/Invoice/EditSalesInvoice" : "/Invoice/CreateSalesInvoice"
+                });
             }
             catch (DbUpdateException ex)
             {
@@ -1730,6 +1762,23 @@ namespace BusinessLogic.Services
                     }
 
                     PaymentReceived payment;
+                    IDictionary<string, object?>? auditPaymentBefore = null;
+                    decimal auditPaidBefore = invoice.PaidAmount ?? 0;
+                    decimal auditBalanceBefore = invoice.BalanceAmount ?? 0;
+                    int auditStatusBefore = invoice.Status;
+
+                    // ========== AUDIT: capture payment state BEFORE any change ==========
+                    if (model.Id > 0)
+                    {
+                        var auditExisting = await _context.PaymentReceiveds
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(x => x.Id == model.Id);
+
+                        if (auditExisting != null)
+                        {
+                            auditPaymentBefore = _audit.Snapshot(auditExisting);
+                        }
+                    }
 
                     if (model.Id == 0)
                     {
@@ -1802,6 +1851,22 @@ namespace BusinessLogic.Services
                     await _context.SaveChangesAsync();
 
                     transaction.Commit();
+
+                    // ========== AUDIT: record payment create / update ==========
+                    await _audit.RecordAsync(new AuditEntryRequest
+                    {
+                        Module = "Payment Received",
+                        Action = model.Id > 0 ? "Update" : "Create",
+                        EntityName = "PaymentReceived",
+                        EntityId = payment.Rvnumber ?? $"Payment#{payment.Id}",
+                        Description = $"RV {payment.Rvnumber} of {model.Amount:N2} recorded against invoice {invoice.InvoiceNo} " +
+                                      $"(mode: {model.PaymentMode}). Invoice paid {auditPaidBefore:N2} -> {invoice.PaidAmount:N2}, " +
+                                      $"balance {auditBalanceBefore:N2} -> {invoice.BalanceAmount:N2}, " +
+                                      $"status {StatusHelper.GetInvoiceStatus(auditStatusBefore)} -> {StatusHelper.GetInvoiceStatus(invoice.Status)}.",
+                        OldValues = auditPaymentBefore,
+                        NewValues = _audit.Snapshot(payment),
+                        PageName = "/Invoice/SalesInvoice"
+                    });
 
                     // Regenerate PDF so the updated status/paid/balance is reflected
                     try
@@ -2669,6 +2734,9 @@ namespace BusinessLogic.Services
 
                     _context.SalesCreditNotes.Add(creditNote);
 
+                    // ========== AUDIT: capture invoice state BEFORE cancelling ==========
+                    var auditInvoiceBefore = _audit.Snapshot(invoice);
+
                     invoice.IsCancelled = true;
                     invoice.CancelledBy = _session.LoginId;
                     invoice.CancelledOn = DateTime.Now;
@@ -2678,6 +2746,19 @@ namespace BusinessLogic.Services
                     await _context.SaveChangesAsync();
 
                     transaction.Commit();
+
+                    // ========== AUDIT: record cancellation ==========
+                    await _audit.RecordAsync(new AuditEntryRequest
+                    {
+                        Module = "Sales Invoice",
+                        Action = "Cancel",
+                        EntityName = "SalesInvoice",
+                        EntityId = invoice.InvoiceNo,
+                        Description = $"Sales invoice {invoice.InvoiceNo} cancelled. Credit note {creditNoteNo} generated for {invoice.GrandTotal:N2}.",
+                        OldValues = auditInvoiceBefore,
+                        NewValues = _audit.Snapshot(invoice),
+                        PageName = "/Invoice/SalesInvoice"
+                    });
 
                     return new
                     {

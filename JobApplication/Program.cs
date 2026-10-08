@@ -57,6 +57,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ISessionHelper, SessionHelper>();
 builder.Services.AddScoped<ISBService, SBService>();
 builder.Services.AddScoped<ILogs, BusinessLogic.Services.Logs>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IAccount, Account>();
 builder.Services.AddScoped<IDropdown, Dropdown>();
 builder.Services.AddScoped<ICostCenter, CostCenterService>();

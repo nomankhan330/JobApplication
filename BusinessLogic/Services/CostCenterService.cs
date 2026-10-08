@@ -28,13 +28,15 @@ namespace BusinessLogic.Services
         private readonly ISessionHelper _session;
         private readonly ILogs _logs;
         private readonly IDatabaseObject _db;
+        private readonly IAuditService _audit;
 
-        public CostCenterService(AppDbContext context, ISessionHelper session, ILogs logs, IDatabaseObject db)
+        public CostCenterService(AppDbContext context, ISessionHelper session, ILogs logs, IDatabaseObject db, IAuditService audit)
         {
             _context = context;
             _session = session;
             _logs = logs;
             _db = db;
+            _audit = audit;
         }
 
         public void Dispose()
@@ -48,6 +50,11 @@ namespace BusinessLogic.Services
             {
                 try
                 {
+                    // ========== AUDIT: snapshot the row before we touch it ==========
+                    var auditBefore = model.Id == 0
+                        ? null
+                        : _audit.Snapshot(await _context.CostCenters.FindAsync(model.Id));
+
                     if (model.Id == 0)
                     {
                         // Duplicate check (CostCenterCode)
@@ -137,6 +144,25 @@ namespace BusinessLogic.Services
 
                     await _context.SaveChangesAsync();
                     transaction.Commit();
+
+                    // ========== AUDIT: record cost center save ==========
+                    var saved = await _context.CostCenters
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.CostCenterName == model.CostCenterName && c.ReferenceId == _session.ReferenceId);
+
+                    await _audit.RecordAsync(new AuditEntryRequest
+                    {
+                        Module = "Cost Center",
+                        Action = model.Id == 0 ? "Create" : "Update",
+                        EntityName = "CostCenter",
+                        EntityId = saved?.CostCenterCode ?? $"CostCenter#{model.Id}",
+                        Description = model.Id == 0
+                            ? $"Cost center '{model.CostCenterName}' created with code {saved?.CostCenterCode}."
+                            : $"Cost center '{model.CostCenterName}' updated.",
+                        OldValues = auditBefore,
+                        NewValues = _audit.Snapshot(saved),
+                        PageName = "/Account/CostCenter"
+                    });
 
                     return new
                     {
@@ -431,8 +457,24 @@ namespace BusinessLogic.Services
                     };
                 }
 
+                // ========== AUDIT: keep the row that is about to disappear ==========
+                var auditBefore = _audit.Snapshot(existingRecord);
+
                 _context.CostCenters.Remove(existingRecord);
                 await _context.SaveChangesAsync();
+
+                // ========== AUDIT: record delete ==========
+                await _audit.RecordAsync(new AuditEntryRequest
+                {
+                    Module = "Cost Center",
+                    Action = "Delete",
+                    EntityName = "CostCenter",
+                    EntityId = existingRecord.CostCenterCode ?? $"CostCenter#{id}",
+                    Description = $"Cost center '{existingRecord.CostCenterName}' deleted.",
+                    OldValues = auditBefore,
+                    NewValues = null,
+                    PageName = "/Account/CostCenter"
+                });
 
                 return new
                 {
@@ -483,6 +525,9 @@ namespace BusinessLogic.Services
                         };
                     }
 
+                    // ========== AUDIT: snapshot before flipping the flag ==========
+                    var auditBefore = _audit.Snapshot(record);
+
                     // 🔥 Toggle Logic
                     record.IsActive = !(record.IsActive ?? false);
 
@@ -491,6 +536,20 @@ namespace BusinessLogic.Services
 
                     await _context.SaveChangesAsync();
                     transaction.Commit();
+
+                    // ========== AUDIT: record status change ==========
+                    await _audit.RecordAsync(new AuditEntryRequest
+                    {
+                        Module = "Cost Center",
+                        Action = "Toggle Status",
+                        EntityName = "CostCenter",
+                        EntityId = record.CostCenterCode ?? $"CostCenter#{id}",
+                        Description = $"Cost center '{record.CostCenterName}' " +
+                                      $"{(record.IsActive == true ? "activated" : "deactivated")}.",
+                        OldValues = auditBefore,
+                        NewValues = _audit.Snapshot(record),
+                        PageName = "/Account/CostCenter"
+                    });
 
                     return new
                     {

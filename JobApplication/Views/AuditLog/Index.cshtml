@@ -1,0 +1,517 @@
+@{
+    ViewData["Title"] = "Audit Log";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Head {
+    <!-- DataTables -->
+    <link href="~/assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/libs/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        /* Before/After value boxes inside the audit detail modal */
+        .audit-values-box {
+            max-height: 340px;
+            overflow: auto;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 0;
+            font-size: 12px;
+        }
+
+        .audit-values-box table {
+            margin-bottom: 0;
+        }
+
+        .audit-values-box thead th {
+            position: sticky;
+            top: 0;
+            background: #e9ecef;
+            z-index: 1;
+        }
+
+        .audit-values-box td {
+            vertical-align: middle;
+            word-break: break-word;
+        }
+
+        .audit-values-box .audit-key {
+            width: 38%;
+            font-weight: 600;
+            background: #f1f3f5;
+            color: #495057;
+        }
+
+        .audit-values-box .audit-row-changed .audit-key {
+            background: #fff3cd;
+        }
+
+        .audit-values-box pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0;
+            font-size: 11px;
+        }
+
+        /* Safety net: an action badge must never end up white-on-white if a
+           text-bg-* utility is unavailable. */
+        #tblAuditLog .badge {
+            color: #fff;
+        }
+
+        #tblAuditLog .badge.text-bg-warning,
+        #tblAuditLog .badge.text-bg-info,
+        #tblAuditLog .badge.text-bg-secondary,
+        #tblAuditLog .badge.text-bg-light {
+            color: #212529;
+        }
+    </style>
+}
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- Start Page Title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Audit Log</h4>
+                </div>
+            </div>
+        </div>
+        <!-- End Page Title -->
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+
+                        <!-- Filters -->
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label class="form-label">Module</label>
+                                <select id="filterModule" class="form-control">
+                                    <option value="">All Modules</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Action</label>
+                                <select id="filterAction" class="form-control">
+                                    <option value="">All Actions</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">User</label>
+                                <input type="text" id="filterUser" class="form-control" placeholder="User name" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Entity ID</label>
+                                <input type="text" id="filterEntity" class="form-control" placeholder="INV-2026-0001, JBN-000001" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">From</label>
+                                <input type="date" id="filterFrom" class="form-control" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">To</label>
+                                <input type="date" id="filterTo" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <button id="btnApplyFilter" class="btn btn-primary">
+                                    <i class="ri-filter-2-line"></i> Apply Filters
+                                </button>
+                                <button id="btnResetFilter" class="btn btn-outline-secondary">
+                                    <i class="ri-refresh-line"></i> Reset
+                                </button>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button id="btnExportPdf" class="btn btn-danger">
+                                    <i class="ri-file-pdf-line"></i> Export PDF
+                                </button>
+                                <button id="btnExportExcel" class="btn btn-success">
+                                    <i class="ri-file-excel-line"></i> Export Excel
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered table-hover align-middle" id="tblAuditLog">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:150px">Date &amp; Time</th>
+                                        <th style="width:130px">User</th>
+                                        <th style="width:130px">Module</th>
+                                        <th style="width:110px">Action</th>
+                                        <th style="width:140px">Reference</th>
+                                        <th>Description</th>
+                                        <th style="width:80px" class="text-center">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Change Detail Modal ==================== -->
+<div class="modal fade" id="auditDetailModal" tabindex="-1" aria-labelledby="auditDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="auditDetailModalLabel">
+                    <i class="fas fa-file-alt me-2"></i> Audit Entry Detail
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Summary -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label text-muted mb-1">Date &amp; Time</label>
+                        <div id="dDateTime" class="fw-semibold">-</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted mb-1">User</label>
+                        <div id="dUser" class="fw-semibold">-</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted mb-1">Module</label>
+                        <div id="dModule" class="fw-semibold">-</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted mb-1">Action</label>
+                        <div id="dAction">-</div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted mb-1">Reference</label>
+                        <div id="dEntityId" class="fw-semibold">-</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted mb-1">Page</label>
+                        <div id="dPage" class="fw-semibold">-</div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted mb-1">IP Address</label>
+                        <div id="dIp" class="fw-semibold">-</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted mb-1">Description</label>
+                        <div id="dDescription"
+                             class="alert alert-light border mb-0 py-2 px-3 fw-semibold"
+                             style="font-size:13px;">
+                            -
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Before / After -->
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label mb-0">
+                                <i class="fas fa-arrow-circle-left text-danger me-1"></i>
+                                <span class="fw-semibold">Before</span>
+                            </label>
+                            <span class="badge bg-danger-subtle text-danger" id="dOldCount">0 changes</span>
+                        </div>
+                        <div id="dOldValues" class="audit-values-box"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label mb-0">
+                                <i class="fas fa-arrow-circle-right text-success me-1"></i>
+                                <span class="fw-semibold">After</span>
+                            </label>
+                            <span class="badge bg-success-subtle text-success" id="dNewCount">0 changes</span>
+                        </div>
+                        <div id="dNewValues" class="audit-values-box"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Script {
+    <script src="~/assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="~/assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script>
+        $(function () {
+
+            var table = $('#tblAuditLog').DataTable({
+                processing: true,
+                serverSide: true,
+                pageLength: 25,
+                order: [[0, 'desc']],
+                ajax: {
+                    url: '/AuditLog/GetItems',
+                    type: 'POST',
+                    data: function (d) {
+                        d.module = $('#filterModule').val() || '';
+                        d.action = $('#filterAction').val() || '';
+                        d.userName = $('#filterUser').val() || '';
+                        d.entityId = $('#filterEntity').val() || '';
+                        d.fromDate = $('#filterFrom').val() || '';
+                        d.toDate = $('#filterTo').val() || '';
+                    }
+                },
+                columns: [
+                    { data: 'AuditDate' },
+                    {
+                        data: 'UserName',
+                        render: function (d) {
+                            return d ? d : '<span class="text-muted">System</span>';
+                        }
+                    },
+                    { data: 'Module' },
+                    {
+                        data: 'Action',
+                        render: function (d) {
+                            return actionBadge(d);
+                        }
+                    },
+                    { data: 'EntityId' },
+                    { data: 'Description' },
+                    {
+                        data: 'Id',
+                        orderable: false,
+                        searchable: false,
+                        className: 'text-center',
+                        render: function (id) {
+                            return '<div class="action-btn-group">' +
+                                   '<button class="action-btn btn-view" data-id="' + id + '" title="View Detail" aria-label="View Detail">' +
+                                   '<i class="fas fa-eye"></i>' +
+                                   '</button>' +
+                                   '</div>';
+                        }
+                    }
+                ]
+            });
+
+            // Cache the last page payload so the modal does not need a second request.
+            var currentRows = {};
+
+            $('#tblAuditLog').on('xhr.dt', function (e, settings, json) {
+                currentRows = {};
+                if (json && json.data) {
+                    json.data.forEach(function (r) { currentRows[r.Id] = r; });
+                }
+            });
+
+            // ---- Load filter dropdowns ----
+            $.post('/AuditLog/GetFilterOptions', function (res) {
+                if (res && res.success) {
+                    (res.modules || []).forEach(function (m) {
+                        $('#filterModule').append($('<option>').val(m).text(m));
+                    });
+                    (res.actions || []).forEach(function (a) {
+                        $('#filterAction').append($('<option>').val(a).text(a));
+                    });
+                }
+            });
+
+            // ---- Filters ----
+            $('#btnApplyFilter').on('click', function () {
+                table.ajax.reload();
+            });
+
+            $('#btnResetFilter').on('click', function () {
+                $('#filterModule').val('');
+                $('#filterAction').val('');
+                $('#filterUser').val('');
+                $('#filterEntity').val('');
+                $('#filterFrom').val('');
+                $('#filterTo').val('');
+                table.ajax.reload();
+            });
+
+            // Enter in any filter box applies the filter.
+            $('#filterUser, #filterEntity').on('keyup', function (e) {
+                if (e.key === 'Enter') table.ajax.reload();
+            });
+
+            // ---- Exports (respect the currently applied filters) ----
+            function exportQuery() {
+                var tbl = $('#tblAuditLog').DataTable();
+                var s = '';
+                if (tbl && typeof tbl.search === 'function') {
+                    s = tbl.search();
+                }
+                return $.param({
+                    module: $('#filterModule').val() || '',
+                    auditAction: $('#filterAction').val() || '',
+                    userName: $('#filterUser').val() || '',
+                    entityId: $('#filterEntity').val() || '',
+                    fromDate: $('#filterFrom').val() || '',
+                    toDate: $('#filterTo').val() || '',
+                    search: s || ''
+                });
+            }
+
+            $('#btnExportPdf').on('click', function () {
+                window.location.href = '/AuditLog/DownloadPdf?' + exportQuery();
+            });
+
+            $('#btnExportExcel').on('click', function () {
+                window.location.href = '/AuditLog/DownloadExcel?' + exportQuery();
+            });
+
+            // ---- Detail modal ----
+            $('#tblAuditLog').on('click', '.btn-view', function () {
+                var row = currentRows[$(this).data('id')];
+                if (!row) return;
+
+                var oldObj = safeParse(row.OldValues);
+                var newObj = safeParse(row.NewValues);
+
+                // Fields whose value actually differs between before and after.
+                var changed = {};
+                Object.keys(newObj || {}).forEach(function (k) {
+                    if (!oldObj || JSON.stringify(oldObj[k]) !== JSON.stringify(newObj[k])) {
+                        changed[k] = true;
+                    }
+                });
+
+                $('#dDateTime').text(row.AuditDate || '-');
+                $('#dUser').text(row.UserName || 'System');
+                $('#dIp').text(row.IpAddress || '-');
+                $('#dModule').text(row.Module || '-');
+                $('#dAction').html(actionBadge(row.Action));
+                $('#dPage').text(row.PageName || '-');
+                $('#dEntityId').text(row.EntityId ? row.EntityId : '-');
+                $('#dDescription').text(row.Description || '-');
+
+                var oldCount = Object.keys(oldObj || {}).length;
+                var newCount = Object.keys(newObj || {}).length;
+                var changeCount = Object.keys(changed).length;
+
+                $('#dOldCount').text(oldCount + ' field' + (oldCount === 1 ? '' : 's'));
+                $('#dNewCount').text(changeCount > 0 ? changeCount + ' changed' : 'No change');
+
+                $('#dOldValues').html(renderValues(oldObj, row.Names, changed));
+                $('#dNewValues').html(renderValues(newObj, row.Names, changed));
+
+                $('#auditDetailModal').modal('show');
+            });
+
+            // Colour-codes an action badge: Create = green, Update = amber,
+            // Delete/Reject = red, Approve = blue. Shared by the table and the modal.
+            // Uses BS 5.3 text-bg-* utilities so the label stays readable on light
+            // and dark themes (bg-warning alone would be white-on-yellow).
+            function actionBadge(action) {
+                if (!action) return '';
+
+                var variant = {
+                    Create: 'success',
+                    Insert: 'success',
+                    Add: 'success',
+                    Update: 'warning',
+                    Edit: 'warning',
+                    Approve: 'primary',
+                    ApprovePending: 'primary',
+                    Reject: 'danger',
+                    Deny: 'danger',
+                    Delete: 'danger',
+                    Void: 'danger',
+                    Login: 'info',
+                    Logout: 'info'
+                }[action] || 'secondary';
+
+                return '<span class="badge rounded-pill text-bg-' + variant + '">' + escapeHtml(action) + '</span>';
+            }
+
+            function safeParse(json) {
+                if (!json) return null;
+                try {
+                    return typeof json === 'string' ? JSON.parse(json) : json;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function renderValues(parsed, names, changed) {
+                if (parsed === null || parsed === undefined) {
+                    return '<div class="p-3 text-center"><em class="text-muted">No data</em></div>';
+                }
+
+                if (typeof parsed !== 'object') {
+                    return '<div class="p-2"><pre>' + escapeHtml(String(parsed)) + '</pre></div>';
+                }
+
+                var keys = Object.keys(parsed);
+                if (keys.length === 0) {
+                    return '<div class="p-3 text-center"><em class="text-muted">No data</em></div>';
+                }
+
+                var html = '<table class="table table-sm table-bordered mb-0"><tbody>';
+
+                keys.forEach(function (key) {
+                    var value = parsed[key];
+                    var resolved = names ? names[key + ':' + value] : null;
+                    var isChanged = changed && changed[key];
+
+                    // Resolved foreign keys read as "JBN-000001" with the raw id kept
+                    // underneath, so the audit trail is still traceable.
+                    var display;
+                    if (resolved) {
+                        display = '<div class="fw-semibold">' + escapeHtml(resolved) + '</div>' +
+                                  '<div class="text-muted" style="font-size:11px;">ID: ' + escapeHtml(String(value)) + '</div>';
+                    } else {
+                        display = renderValue(value);
+                    }
+
+                    html += '<tr' + (isChanged ? ' class="audit-row-changed"' : '') + '>' +
+                            '<td class="audit-key">' + escapeHtml(key) + '</td>' +
+                            '<td>' + display + '</td>' +
+                            '</tr>';
+                });
+
+                html += '</tbody></table>';
+                return html;
+            }
+
+            function renderValue(value) {
+                if (value === null || value === undefined) {
+                    return '<em class="text-muted">(empty)</em>';
+                }
+
+                if (Array.isArray(value)) {
+                    return '<pre>' + escapeHtml(JSON.stringify(value, null, 2)) + '</pre>';
+                }
+
+                if (typeof value === 'object') {
+                    return '<pre>' + escapeHtml(JSON.stringify(value, null, 2)) + '</pre>';
+                }
+
+                return escapeHtml(String(value));
+            }
+
+            function escapeHtml(text) {
+                return String(text)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+        });
+    </script>
+}

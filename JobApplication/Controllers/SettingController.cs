@@ -9,11 +9,13 @@ namespace JobApplication.Controllers
     {
         private readonly AppDbContext _db;
         private readonly ISessionHelper _session;
+        private readonly IAuditService _audit;
 
-        public SettingController(AppDbContext db, ISessionHelper session)
+        public SettingController(AppDbContext db, ISessionHelper session, IAuditService audit)
         {
             _db = db;
             _session = session;
+            _audit = audit;
         }
 
         // Generic settings index. ?type=jobtype|bltype|containertype|country
@@ -144,6 +146,11 @@ namespace JobApplication.Controllers
                 name = name.Trim();
             }
 
+            // ========== AUDIT: snapshot the current state before mutating ==========
+            // Snapshot() copies the values out, so later mutation of the tracked
+            // entity cannot leak into the "before" side of the diff.
+            var auditBefore = _audit.Snapshot(await LoadSettingEntityAsync(type, id));
+
             switch (type)
             {
                 case "bltype":
@@ -212,6 +219,23 @@ namespace JobApplication.Controllers
             }
 
             await _db.SaveChangesAsync();
+
+            // ========== AUDIT: record lookup-item create / update ==========
+            var createdId = id;
+            if (createdId == 0)
+            {
+                // Re-read to pick up the identity assigned by the insert.
+                createdId = await NewestSettingIdAsync(type);
+            }
+
+            var auditAfter = _audit.Snapshot(await LoadSettingEntityAsync(type, createdId));
+
+            await RecordSettingAsync(
+                type, createdId, id == 0 ? "Create" : "Update",
+                auditBefore, auditAfter,
+                $"{SettingTitle(type)} '{SettingLabel(type, await LoadSettingEntityAsync(type, createdId))}' " +
+                (id == 0 ? "created." : "updated."));
+
             return Json(new { success = true });
         }
 
@@ -236,6 +260,9 @@ namespace JobApplication.Controllers
         public async Task<IActionResult> ToggleStatus(string type, int id)
         {
             type = (type ?? "").ToLower();
+
+            // ========== AUDIT: snapshot before the flag flips ==========
+            var auditBefore = _audit.Snapshot(await LoadSettingEntityAsync(type, id));
 
             switch (type)
             {
@@ -267,6 +294,25 @@ namespace JobApplication.Controllers
             }
 
             await _db.SaveChangesAsync();
+
+            // ========== AUDIT: record status change ==========
+            var auditEntity = await LoadSettingEntityAsync(type, id);
+            var auditAfter = _audit.Snapshot(auditEntity);
+            var nowActive = auditEntity switch
+            {
+                Bltype x => x.IsActive ?? false,
+                ContainerType x => x.IsActive ?? false,
+                PaymentHeader x => x.IsActive ?? false,
+                Country x => x.IsActive ?? false,
+                JobType x => x.IsActive ?? false,
+                _ => (bool?)null
+            };
+
+            await RecordSettingAsync(
+                type, id, "Toggle Status", auditBefore, auditAfter,
+                $"{SettingTitle(type)} '{SettingLabel(type, auditEntity)}' " +
+                $"{(nowActive == true ? "enabled" : "disabled")} by user #{_session.LoginId}.");
+
             return Json(new { success = true });
         }
 
@@ -274,6 +320,9 @@ namespace JobApplication.Controllers
         public async Task<IActionResult> DeleteItem(string type, int id)
         {
             type = (type ?? "").ToLower();
+
+            // ========== AUDIT: keep the row that is about to disappear ==========
+            var auditBefore = _audit.Snapshot(await LoadSettingEntityAsync(type, id));
 
             switch (type)
             {
@@ -296,6 +345,15 @@ namespace JobApplication.Controllers
             }
 
             await _db.SaveChangesAsync();
+
+            // ========== AUDIT: record delete ==========
+            if (auditBefore != null)
+            {
+                await RecordSettingAsync(
+                    type, id, "Delete", auditBefore, null,
+                    $"{SettingTitle(type)} '{SettingLabel(type, null, auditBefore)}' deleted by user #{_session.LoginId}.");
+            }
+
             return Json(new { success = true });
         }
 
@@ -310,6 +368,10 @@ namespace JobApplication.Controllers
         public async Task<IActionResult> UpdateVatSetting(decimal? vat)
         {
             var list = await _db.PaymentHeaders.Where(x => x.PaymentTypeId == 2).ToListAsync();
+
+            // ========== AUDIT: snapshot before applying the new rate ==========
+            var auditBefore = _audit.Snapshot(list.FirstOrDefault());
+
             if (list.Count == 0)
             {
                 _db.PaymentHeaders.Add(new PaymentHeader
@@ -331,6 +393,23 @@ namespace JobApplication.Controllers
                 }
             }
             await _db.SaveChangesAsync();
+
+            // ========== AUDIT: record VAT rate change ==========
+            var auditAfter = _audit.Snapshot(await _db.PaymentHeaders
+                .Where(x => x.PaymentTypeId == 2).FirstOrDefaultAsync());
+
+            await _audit.RecordAsync(new AuditEntryRequest
+            {
+                Module = "Settings",
+                Action = "Update",
+                EntityName = "PaymentHeader",
+                EntityId = "VAT Rate",
+                Description = $"Default VAT rate changed by user #{_session.LoginId}.",
+                OldValues = auditBefore,
+                NewValues = auditAfter,
+                PageName = "/Setting?type=general"
+            });
+
             return Json(new { success = true });
         }
 
@@ -351,6 +430,9 @@ namespace JobApplication.Controllers
             }
 
             var setting = await _db.Settings.FirstOrDefaultAsync(x => x.SettingKey == "EnableInvoiceQRCode");
+            bool auditWasEnabled = setting?.IsActive ?? false;
+            bool isEdit = setting != null;
+
             if (setting == null)
             {
                 _db.Settings.Add(new Setting
@@ -370,6 +452,19 @@ namespace JobApplication.Controllers
                 setting.ModifiedOn = DateTime.Now;
             }
             await _db.SaveChangesAsync();
+
+            await _audit.RecordAsync(new AuditEntryRequest
+            {
+                Module = "Settings",
+                Action = "Update",
+                EntityName = "Setting",
+                EntityId = "EnableInvoiceQRCode",
+                Description = $"Invoice QR Code (ZATCA) {(enabled ? "enabled" : "disabled")} by user #{_session.LoginId}.",
+                OldValues = new Dictionary<string, object?> { { "IsActive", auditWasEnabled ? "true" : "false" } },
+                NewValues = new Dictionary<string, object?> { { "IsActive", enabled ? "true" : "false" } },
+                PageName = "/Setting?type=general"
+            });
+
             return Json(new { success = true });
         }
 
@@ -390,6 +485,8 @@ namespace JobApplication.Controllers
             }
 
             var setting = await _db.Settings.FirstOrDefaultAsync(x => x.SettingKey == "EnableTwoFactorAuth");
+            bool auditWasEnabled = setting?.IsActive ?? false;
+
             if (setting == null)
             {
                 _db.Settings.Add(new Setting
@@ -409,7 +506,129 @@ namespace JobApplication.Controllers
                 setting.ModifiedOn = DateTime.Now;
             }
             await _db.SaveChangesAsync();
+
+            await _audit.RecordAsync(new AuditEntryRequest
+            {
+                Module = "Settings",
+                Action = "Update",
+                EntityName = "Setting",
+                EntityId = "EnableTwoFactorAuth",
+                Description = $"Two-factor authentication {(enabled ? "ENABLED" : "DISABLED")} for all users by user #{_session.LoginId}. Previous state: {(auditWasEnabled ? "enabled" : "disabled")}.",
+                OldValues = new Dictionary<string, object?> { { "IsActive", auditWasEnabled ? "true" : "false" } },
+                NewValues = new Dictionary<string, object?> { { "IsActive", enabled ? "true" : "false" } },
+                PageName = "/Setting?type=general"
+            });
+
             return Json(new { success = true });
+        }
+
+        // =============================================================
+        // AUDIT HELPERS - lookup / master-data setting items
+        // =============================================================
+
+        /// <summary>
+        /// Loads the right lookup entity for the given type. Kept separate from the
+        /// switch statements above so audit can read state without duplicating the
+        /// "find or fail" branches.
+        /// </summary>
+        private async Task<object?> LoadSettingEntityAsync(string type, int id)
+        {
+            if (id <= 0) return null;
+
+            return type switch
+            {
+                "bltype" => await _db.Bltypes.FindAsync(id),
+                "containertype" => await _db.ContainerTypes.FindAsync(id),
+                "country" => await _db.Countries.FindAsync(id),
+                "paymentheader" => await _db.PaymentHeaders.FindAsync(id),
+                _ => await _db.JobTypes.FindAsync(id)
+            };
+        }
+
+        /// <summary>
+        /// After an insert the client still holds id == 0, so read back the highest
+        /// identity to give the audit entry a meaningful reference.
+        /// </summary>
+        private async Task<int> NewestSettingIdAsync(string type)
+        {
+            int? newest = type switch
+            {
+                "bltype" => await _db.Bltypes.Select(x => (int?)x.Id).MaxAsync(),
+                "containertype" => await _db.ContainerTypes.Select(x => (int?)x.Id).MaxAsync(),
+                "country" => await _db.Countries.Select(x => (int?)x.Id).MaxAsync(),
+                "paymentheader" => await _db.PaymentHeaders.Select(x => (int?)x.Id).MaxAsync(),
+                _ => await _db.JobTypes.Select(x => (int?)x.Id).MaxAsync()
+            };
+
+            return newest ?? 0;
+        }
+
+        /// <summary>Human label for the entity, e.g. "BL Type".</summary>
+        private static string SettingTitle(string type)
+        {
+            return type switch
+            {
+                "bltype" => "BL Type",
+                "containertype" => "Container Type",
+                "country" => "Country",
+                "paymentheader" => "Payment Header",
+                _ => "Job Type"
+            };
+        }
+
+        /// <summary>Table name, used as the audit EntityName.</summary>
+        private static string SettingEntityName(string type)
+        {
+            return type switch
+            {
+                "bltype" => nameof(Bltype),
+                "containertype" => nameof(ContainerType),
+                "country" => nameof(Country),
+                "paymentheader" => nameof(PaymentHeader),
+                _ => nameof(JobType)
+            };
+        }
+
+        /// <summary>
+        /// The record's display value. Falls back to the snapshot dictionary when the
+        /// entity is already gone (delete case).
+        /// </summary>
+        private static string SettingLabel(string type, object? entity, IDictionary<string, object?>? fallback = null)
+        {
+            string? val = entity switch
+            {
+                Bltype x => x.Name,
+                ContainerType x => x.Name,
+                Country x => x.Name,
+                PaymentHeader x => x.Headers,
+                JobType x => x.Name,
+                _ => null
+            };
+
+            val ??= fallback?["Name"]?.ToString() ?? fallback?["Headers"]?.ToString();
+
+            return string.IsNullOrWhiteSpace(val) ? "(no name)" : val!;
+        }
+
+        private Task RecordSettingAsync(
+            string type,
+            int id,
+            string action,
+            IDictionary<string, object?>? before,
+            IDictionary<string, object?>? after,
+            string description)
+        {
+            return _audit.RecordAsync(new AuditEntryRequest
+            {
+                Module = "Settings",
+                Action = action,
+                EntityName = SettingEntityName(type),
+                EntityId = $"{SettingTitle(type)} #{id}",
+                Description = description,
+                OldValues = before,
+                NewValues = after,
+                PageName = $"/Setting?type={type}"
+            });
         }
     }
 }

@@ -24,7 +24,7 @@ namespace BusinessLogic.Interfaces
         public Task<int> CountJobs(IList<QueryFilters> filters);
         public Task<FinancialStatisticsDto> GetFinancialStatisticsAsync(DateTime currentStart, DateTime currentEnd, DateTime prevStart, DateTime prevEnd);
 
-        public Task<List<RecentInvoiceDto>> GetRecentInvoicesAsync(int take = 10);
-        public Task<List<JobOperationsShareDto>> GetJobOperationsShareAsync(string period = "ThisMonth");
+        public Task<List<RecentInvoiceDto>> GetRecentInvoicesAsync(int take = 10, DateTime? from = null, DateTime? to = null);
+        public Task<List<JobOperationsShareDto>> GetJobOperationsShareAsync(string period = "ThisMonth", DateTime? from = null, DateTime? to = null);
     }
 }

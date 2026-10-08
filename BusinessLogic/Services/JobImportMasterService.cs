@@ -30,18 +30,20 @@ namespace BusinessLogic.Services
         private readonly ISessionHelper _session;
         private readonly ILogs _logs;
         private readonly IDatabaseObject _db;
+        private readonly IAuditService _audit;
 
         public void Dispose()
         {
             //throw new NotImplementedException();
         }
 
-        public JobImportMasterService(AppDbContext context, ISessionHelper session, ILogs logs, IDatabaseObject db)
+        public JobImportMasterService(AppDbContext context, ISessionHelper session, ILogs logs, IDatabaseObject db, IAuditService audit)
         {
             _context = context;
             _session = session;
             _logs = logs;
             _db = db;
+            _audit = audit;
         }
 
         public async Task<dynamic> Save(JobImportMasterVM model)
@@ -51,6 +53,7 @@ namespace BusinessLogic.Services
                 try
                 {
                     JobImportMaster entity;
+                    IDictionary<string, object?>? auditBefore = null;
 
                     // =========================
                     // 🔹 INSERT
@@ -133,6 +136,9 @@ namespace BusinessLogic.Services
                         if (entity == null)
                             return new { errorCode = 404, message = "Record not found" };
 
+                        // ========== AUDIT: capture state BEFORE any change ==========
+                        auditBefore = _audit.Snapshot(entity);
+
                         entity.CostCenterId = model.CostCenterId;
                         entity.JobDate = model.JobDate;
 
@@ -199,6 +205,27 @@ namespace BusinessLogic.Services
                     // =========================
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
+
+                    // ========== AUDIT: record job create / update ==========
+                    bool isJobEdit = auditBefore != null;
+                    var jobNames = await _audit.ResolveNamesAsync(model.CustomerId, entity.Id);
+                    string jobCustomerLabel = jobNames.Lookup.TryGetValue($"CustomerId:{model.CustomerId}", out var cName)
+                        ? cName
+                        : $"#{model.CustomerId}";
+
+                    await _audit.RecordAsync(new AuditEntryRequest
+                    {
+                        Module = "Job",
+                        Action = isJobEdit ? "Update" : "Create",
+                        EntityName = "JobImportMaster",
+                        EntityId = jobNumber,
+                        Description = isJobEdit
+                            ? $"Job {jobNumber} updated (customer {jobCustomerLabel}, shipment type: {model.ShipmentType}, BL: {model.BlNo})."
+                            : $"Job {jobNumber} created for customer {jobCustomerLabel} (shipment type: {model.ShipmentType}, shipper: {model.Shipper}, consignee: {model.Consignee}).",
+                        OldValues = auditBefore,
+                        NewValues = _audit.Snapshot(entity),
+                        PageName = model.ShipmentType == 2 ? "/Job/AddExport" : "/Job/AddImport"
+                    });
 
                     return new { errorCode = 200, message = "Saved successfully" };
                 }
@@ -626,6 +653,13 @@ namespace BusinessLogic.Services
                 .Where(x => x.JobImportMasterId == jobImportMasterId)
                 .ToListAsync();
 
+            // ========== AUDIT: capture payment rows BEFORE any change ==========
+            var auditPaymentsBefore = existingPayments.Count;
+            var auditPaymentsBeforeRows = existingPayments
+                .Select(x => _audit.Snapshot(x))
+                .ToList();
+            var auditNewPaymentRows = new List<JobImportPayment>();
+
             if (model?.payment_type == null || !model.payment_type.Any())
                 return new { errorCode = 200, message = "No invoice rows available" };
 
@@ -697,7 +731,7 @@ namespace BusinessLogic.Services
                 }
                 else
                 {
-                    _context.JobImportPayments.Add(new JobImportPayment
+                    var newRow = new JobImportPayment
                     {
                         JobImportMasterId = jobImportMasterId,
 
@@ -711,13 +745,41 @@ namespace BusinessLogic.Services
 
                         CreatedBy = _session.LoginId,
                         CreatedOn = DateTime.Now
-                    });
+                    };
+
+                    _context.JobImportPayments.Add(newRow);
+                    auditNewPaymentRows.Add(newRow);
                 }
 
                 rowPointer++;
             }
 
             await _context.SaveChangesAsync();
+
+            // ========== AUDIT: record invoice/payment row changes for this job ==========
+            var auditPaymentsAfterRows = existingPayments
+                .Select(x => _audit.Snapshot(x))
+                .Concat(auditNewPaymentRows.Select(x => _audit.Snapshot(x)))
+                .ToList();
+
+            int auditPaymentsAfter = auditPaymentsAfterRows.Count;
+
+            if (auditPaymentsBefore != auditPaymentsAfter || hasValidRow)
+            {
+                await _audit.RecordAsync(new AuditEntryRequest
+                {
+                    Module = "Job",
+                    Action = "Invoice Payments",
+                    EntityName = "JobImportPayment",
+                    EntityId = jobNumber,
+                    Description = $"Invoice/payment rows for job {jobNumber} saved. Row count: {auditPaymentsBefore} -> {auditPaymentsAfter}.",
+                    OldValues = auditPaymentsBeforeRows.Count > 0
+                        ? new Dictionary<string, object?> { { "PaymentRows", auditPaymentsBeforeRows } }
+                        : null,
+                    NewValues = new Dictionary<string, object?> { { "PaymentRows", auditPaymentsAfterRows } },
+                    PageName = model.ShipmentType == 2 ? "/Job/AddExport" : "/Job/AddImport"
+                });
+            }
 
             // 🔥 ONLY call lock if at least one valid row exists
             if (hasValidRow && hasLockEntry && _session.UserType == 4)
@@ -1293,11 +1355,27 @@ namespace BusinessLogic.Services
             }
             
 
+            // ========== AUDIT: capture request state BEFORE approval ==========
+            var auditBefore = _audit.Snapshot(request);
+
             request.IsApproved = true;
             request.ApprovedBy = _session.LoginId;
             request.ApprovedOn = DateTime.Now;
 
             await _context.SaveChangesAsync();
+
+            // ========== AUDIT: record approval ==========
+            await _audit.RecordAsync(new AuditEntryRequest
+            {
+                Module = "Invoice Access",
+                Action = "Approve",
+                EntityName = "JobInvoiceAccessRequest",
+                EntityId = request.JobNumber ?? $"Request#{request.Id}",
+                Description = $"Invoice access request #{request.Id} for job {request.JobNumber} approved by user #{_session.LoginId}.",
+                OldValues = auditBefore,
+                NewValues = _audit.Snapshot(request),
+                PageName = "/Job/InvoiceAccessRequests"
+            });
 
             return new
             {
@@ -1972,9 +2050,11 @@ namespace BusinessLogic.Services
             };
         }
 
-        public async Task<List<RecentInvoiceDto>> GetRecentInvoicesAsync(int take = 10)
+        public async Task<List<RecentInvoiceDto>> GetRecentInvoicesAsync(int take = 10, DateTime? from = null, DateTime? to = null)
         {
             var refId = _session.ReferenceId;
+            DateTime? dateFrom = from;
+            DateTime? dateTo = to;
 
             // 1. Sales Invoices Queryable
             var salesQuery = from inv in _context.SalesInvoices
@@ -1985,6 +2065,8 @@ namespace BusinessLogic.Services
                              from job in jobJoin.DefaultIfEmpty()
 
                              where inv.ReferenceId == refId
+                                && (!dateFrom.HasValue || inv.InvoiceDate >= dateFrom.Value)
+                                && (!dateTo.HasValue || inv.InvoiceDate < dateTo.Value.Date.AddDays(1))
                              select new
                              {
                                  InvoiceDate = inv.InvoiceDate,
@@ -2008,16 +2090,18 @@ namespace BusinessLogic.Services
                                 join job in _context.JobImportMasters on inv.JobId equals job.Id into jobJoin
                                 from job in jobJoin.DefaultIfEmpty()
 
-                                where inv.ReferenceId == refId
-                                select new
-                                {
-                                    InvoiceDate = inv.InvoiceDate,
-                                    Dto = new RecentInvoiceDto
-                                    {
-                                        InvoiceNo = inv.InvoiceNo,
-                                        JobNo = job.JobNumber,
-                                        PartyName = cust.CustomerName ?? inv.ServiceProviderName,
-                                        Type = "Purchase",
+                             where inv.ReferenceId == refId
+                                && (!dateFrom.HasValue || inv.InvoiceDate >= dateFrom.Value)
+                                && (!dateTo.HasValue || inv.InvoiceDate < dateTo.Value.Date.AddDays(1))
+                             select new
+                             {
+                                 InvoiceDate = inv.InvoiceDate,
+                                 Dto = new RecentInvoiceDto
+                                 {
+                                     InvoiceNo = inv.InvoiceNo,
+                                     JobNo = job.JobNumber,
+                                     PartyName = cust.CustomerName ?? inv.ServiceProviderName,
+                                     Type = "Purchase",
                                         BLNumber = job.BlNo,
                                         GrandTotal = inv.GrandTotal,
                                         Status = inv.Status
@@ -2085,13 +2169,18 @@ namespace BusinessLogic.Services
                         .ToList();
         }
 
-        public async Task<List<JobOperationsShareDto>> GetJobOperationsShareAsync(string period = "ThisMonth")
+        public async Task<List<JobOperationsShareDto>> GetJobOperationsShareAsync(string period = "ThisMonth", DateTime? from = null, DateTime? to = null)
         {
             var refId = _session.ReferenceId;
             var now = DateTime.Now;
             DateTime fromDate, toDate;
 
-            if (period == "LastMonth")
+            if (from.HasValue && to.HasValue)
+            {
+                fromDate = from.Value;
+                toDate = to.Value;
+            }
+            else if (period == "LastMonth")
             {
                 fromDate = new DateTime(now.Year, now.Month, 1).AddMonths(-1);
                 toDate = new DateTime(now.Year, now.Month, 1).AddDays(-1);

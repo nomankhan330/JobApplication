@@ -131,23 +131,17 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        <div class="row" style="display:none;">
+        <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                     <h4 class="mb-sm-0">Dashboard</h4>
                     <div class="d-flex align-items-center">
-                        <div class="me-2">
-                            <input type="date" id="globalFromDate" class="form-control form-control-sm" />
-                        </div>
-                        <div class="me-2">
-                            <input type="date" id="globalToDate" class="form-control form-control-sm" />
-                        </div>
-                        <div class="me-2">
-                            <button id="applyDateRange" class="btn btn-sm btn-primary">Apply</button>
-                        </div>
-                        <div>
-                            <button id="clearDateRange" class="btn btn-sm btn-secondary">Clear</button>
-                        </div>
+                        <label class="me-2 mb-0 text-muted font-size-13" for="dashboardMonth">Month</label>
+                        <select id="dashboardMonth" class="form-select form-select-sm shadow-none" style="width: auto; min-width: 180px;">
+                            <option value="all">All</option>
+                            <option value="current" selected>Current Month</option>
+                            <option value="previous">Previous Month</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -363,17 +357,6 @@
             <div class="col-xl-6">
                 <div class="card">
                     <div class="card-body pb-0">
-                        <div class="float-end d-none d-md-inline-block">
-                            <div class="dropdown">
-                                <a class="text-reset dropdown-toggle" href="#" id="revenuePeriodToggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <span class="text-muted" id="revenuePeriodLabel">This Year<i class="mdi mdi-chevron-down ms-1"></i></span>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="revenuePeriodToggle">
-                                    <a class="dropdown-item revenue-period" href="#" data-period="ThisYear">This Year</a>
-                                    <a class="dropdown-item revenue-period" href="#" data-period="LastYear">Last Year</a>
-                                </div>
-                            </div>
-                        </div>
                         <h4 class="card-title mb-4">Revenue Billing vs Cash Collection</h4>
 
                         <div class="text-center pt-3">
@@ -450,13 +433,6 @@
             <div class="col-xl-4">
                 <div class="card">
                     <div class="card-body">
-                        <div class="float-end">
-                            <select id="jobSharePeriod" class="form-select shadow-none form-select-sm">
-                                <option value="ThisMonth" selected>This Month</option>
-                                <option value="LastMonth">Last Month</option>
-                                <option value="ThisYear">This Year</option>
-                            </select>
-                        </div>
                         <h4 class="card-title mb-4">Job Operations Share</h4>
 
                         <div class="row" id="jobSharePercentages">
@@ -709,16 +685,46 @@
                 }
             }
 
+            // ========== Month Dropdown ==========
+            function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+            (function populateMonthOptions() {
+                var $month = $('#dashboardMonth');
+                if (!$month.length) return;
+
+                var now = new Date();
+                var monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'];
+
+                $month.append('<option disabled>────────────</option>');
+
+                // Past months (2 months ago se start, takke Previous Month na dohraye)
+                for (var i = 2; i <= 13; i++) {
+                    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    var value = d.getFullYear() + '-' + pad(d.getMonth() + 1);
+                    var label = monthNames[d.getMonth()] + ' ' + d.getFullYear();
+                    $month.append($('<option></option>').attr('value', value).text(label));
+                }
+            })();
+
+            function getSelectedMonth() {
+                return $('#dashboardMonth').val() || 'current';
+            }
+
             // ========== Main Load Function (Sirf 1 Request) ==========
             function loadDashboard() {
-                const period = $('#jobSharePeriod').val() || 'ThisMonth';
+                const month = getSelectedMonth();
+
+                // All (all-time) select hone pe trend badges meaningful nahi hote
+                try { $('.trend-badge').closest('.d-flex').toggle(month !== 'all'); } catch (e) { }
+
                 // ensure loader visible while dashboard main data is being fetched
                 try { $('#dashboardFullLoader').show(); } catch (e) { }
 
                 $.ajax({
                     url: '/Dashboard/GetDashboardData',
                     type: 'GET',
-                    data: { period: period },
+                    data: { month: month },
                     cache: false,
                     success: function (resp) {
 
@@ -746,8 +752,13 @@
             // ========== Events ==========
             loadDashboard();                          // First load
 
-            $('#jobSharePeriod').on('change', function () {
-                loadDashboard();                      // Period change pe bhi
+            $('#dashboardMonth').on('change', function () {
+                loadDashboard();                      // Month change pe dashboard reload
+
+                // Charts bhi selected month ke according reload
+                var month = getSelectedMonth();
+                if (window.DashboardFetchTrend) DashboardFetchTrend(null, null, null, month);
+                if (window.DashboardFetchRevenue) DashboardFetchRevenue(null, null, null, month);
             });
 
             // Auto refresh every 30 seconds

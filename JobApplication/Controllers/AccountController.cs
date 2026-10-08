@@ -16,12 +16,14 @@ namespace JobApplication.Controllers
         private readonly IAccount _account;
         private readonly ISessionHelper _session;
         private readonly AppDbContext _context;
+        private readonly IAuditService _audit;
 
-        public AccountController(IAccount account, ISessionHelper session, AppDbContext context) : base(session)
+        public AccountController(IAccount account, ISessionHelper session, AppDbContext context, IAuditService audit) : base(session)
         {
             _account = account;
             _session = session;
             _context = context;
+            _audit = audit;
         }
 
         [AllowAnonymous]
@@ -166,9 +168,35 @@ namespace JobApplication.Controllers
             return View();
         }
 
-        public ContentResult logout()
+        public async Task<ContentResult> logout()
         {
+            // ========== AUDIT: capture identity before the session is cleared ==========
+            int loginId = _session.LoginId;
+            string userName = _session.UserName;
+
             _session.Logout();
+
+            // ========== AUDIT: record logout ==========
+            // UserIdOverride/UserNameOverride are used because the session is already
+            // cleared by this point.
+            await _audit.RecordAsync(new AuditEntryRequest
+            {
+                Module = "Authentication",
+                Action = "Logout",
+                EntityName = "Users",
+                EntityId = userName,
+                Description = $"User {userName} logged out.",
+                OldValues = null,
+                NewValues = new Dictionary<string, object?>
+                {
+                    { "UserId", loginId > 0 ? loginId.ToString() : null },
+                    { "UserName", userName }
+                },
+                PageName = "/Account/logout",
+                UserIdOverride = loginId > 0 ? loginId : null,
+                UserNameOverride = userName
+            });
+
             return Content(JsonConvert.SerializeObject("000"), "application/json");
         }
 

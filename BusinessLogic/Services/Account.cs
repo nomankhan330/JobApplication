@@ -28,13 +28,15 @@ namespace BusinessLogic.Services
         private readonly ISessionHelper _session;
         private readonly ILogs _logs;
         private readonly IDatabaseObject _db;
+        private readonly IAuditService _audit;
 
-        public Account(AppDbContext context, ISessionHelper session, ILogs logs, IDatabaseObject db)
+        public Account(AppDbContext context, ISessionHelper session, ILogs logs, IDatabaseObject db, IAuditService audit)
         {
             _context = context;
             _session = session;
             _logs = logs;
             _db = db;
+            _audit = audit;
         }
 
         public void Dispose()
@@ -148,6 +150,27 @@ namespace BusinessLogic.Services
                         await _db.Execute(updateQuery, updateParams, CommandType.Text);
 
                         PopulateSession(row);
+
+                        // ========== AUDIT: record successful login ==========
+                        // Audit runs before the response so the entry is written even if
+                        // the client drops the connection right after.
+                        await _audit.RecordAsync(new AuditEntryRequest
+                        {
+                            Module = "Authentication",
+                            Action = "Login",
+                            EntityName = "Users",
+                            EntityId = DataHelper.stringParse(row["UserId"]),
+                            Description = $"User {DataHelper.stringParse(row["UserId"])} " +
+                                          $"({DataHelper.stringParse(row["UserName"])}) logged in successfully.",
+                            OldValues = null,
+                            NewValues = new Dictionary<string, object?>
+                            {
+                                { "UserId", DataHelper.stringParse(row["UserId"]) },
+                                { "UserType", userType },
+                                { "LoginType", DataHelper.intParse(row["LoginType"]) }
+                            },
+                            PageName = "/Home/Login"
+                        });
 
                         return new
                         {
@@ -287,6 +310,25 @@ namespace BusinessLogic.Services
                     // LastLogin update failure should not block login
                 }
 
+                // ========== AUDIT: record successful login (2FA path) ==========
+                await _audit.RecordAsync(new AuditEntryRequest
+                {
+                    Module = "Authentication",
+                    Action = "Login",
+                    EntityName = "Users",
+                    EntityId = pending.UserId,
+                    Description = $"User {pending.UserId} ({pending.UserName}) logged in successfully with two-factor authentication.",
+                    OldValues = null,
+                    NewValues = new Dictionary<string, object?>
+                    {
+                        { "UserId", pending.UserId },
+                        { "UserType", pending.UserType },
+                        { "LoginType", pending.LoginType },
+                        { "TwoFactor", true }
+                    },
+                    PageName = "/Home/Login"
+                });
+
                 return new
                 {
                     errorCode = 200,
@@ -423,6 +465,23 @@ namespace BusinessLogic.Services
                 {
                     User user;
                     int Id = 0;
+                    IDictionary<string, object?>? auditBefore = null;
+
+                    // ========== AUDIT: capture state BEFORE any change ==========
+                    if (model.Id != 0)
+                    {
+                        var auditExisting = await _context.Users
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(u => u.Id == model.Id);
+
+                        if (auditExisting != null)
+                        {
+                            auditBefore = _audit.Snapshot(auditExisting);
+                            // Never let a plaintext/effective password land in the audit log.
+                            auditBefore.Remove("Password");
+                            auditBefore["Password"] = auditExisting.Password == null ? null : "********";
+                        }
+                    }
 
                     // ================= INSERT =================
                     if (model.Id == 0)
@@ -579,6 +638,30 @@ namespace BusinessLogic.Services
                     }
 
                     transaction.Commit();
+
+                    // ========== AUDIT: record user create / update ==========
+                    bool isUserEdit = auditBefore != null;
+                    var auditAfter = _audit.Snapshot(user);
+                    auditAfter["Password"] = user.Password == null ? null : "********";
+
+                    object? auditOldType = null;
+                    object? auditOldActive = null;
+                    auditBefore?.TryGetValue("UserType", out auditOldType);
+                    auditBefore?.TryGetValue("IsActive", out auditOldActive);
+
+                    await _audit.RecordAsync(new AuditEntryRequest
+                    {
+                        Module = "User",
+                        Action = isUserEdit ? "Update" : "Create",
+                        EntityName = "Users",
+                        EntityId = user.UserId,
+                        Description = isUserEdit
+                            ? $"User {user.UserId} ({user.UserName}) updated. UserType: {auditOldType} -> {user.UserType}, active: {auditOldActive} -> {user.IsActive}."
+                            : $"User {user.UserId} ({user.UserName}) created with UserType {user.UserType}, active: {user.IsActive}.",
+                        OldValues = auditBefore,
+                        NewValues = auditAfter,
+                        PageName = "/Account/AdminUsers"
+                    });
 
                     return new { errorCode = 200, errorMessage = "User saved successfully" };
                 }
